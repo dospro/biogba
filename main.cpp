@@ -2,8 +2,6 @@
  * File:   main.cpp
  * Author: dospro
  *         Jonatan Mendez Lopez
- *
- * Created on 17 de enero de 2015, 08:38 PM
  */
 
 #include <stdio.h>

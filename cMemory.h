@@ -25,8 +25,6 @@ private:
     word *RomMemory; //Max 32MB
     word *EWorkRam; //256 KB On board
     u32 *IWorkRam; //32 KB on CPU
-
-
 };
 
 #endif	/* CMEMORY_H */
