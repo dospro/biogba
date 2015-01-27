@@ -11,6 +11,7 @@
 
 struct GBAHeader {
     char title[12];
+	int romSize;
 };
 
 class cMemory {
@@ -19,12 +20,22 @@ public:
     ~cMemory();
 
     bool loadRom(char *fileName);
+
+	byte readByte(u32 address);
+	void writeByte(u32 address, byte data);
+
+	word readWord(u32 address);
+	void writeWord(u32 address, word data);
+
+	u32 readDword(u32 address);
+	void writeDword(u32 address, u32 data);
+
 private:
     GBAHeader header;
-    u32 *BIOSMemory; //16 KB
-    word *RomMemory; //Max 32MB
-    word *EWorkRam; //256 KB On board
-    u32 *IWorkRam; //32 KB on CPU
+    byte *BIOSMemory; //16 KB
+    byte *RomMemory; //Max 32MB
+    byte *EWorkRam; //256 KB On board
+    byte *IWorkRam; //32 KB on CPU
 };
 
 #endif	/* CMEMORY_H */
