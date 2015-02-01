@@ -11,7 +11,7 @@
 
 struct GBAHeader {
     char title[12];
-	int romSize;
+    int romSize;
 };
 
 class cMemory {
@@ -21,14 +21,14 @@ public:
 
     bool loadRom(char *fileName);
 
-	byte readByte(u32 address);
-	void writeByte(u32 address, byte data);
+    byte readByte(u32 address);
+    void writeByte(u32 address, byte data);
 
-	word readWord(u32 address);
-	void writeWord(u32 address, word data);
+    word readWord(u32 address);
+    void writeWord(u32 address, word data);
 
-	u32 readDword(u32 address);
-	void writeDword(u32 address, u32 data);
+    u32 readDword(u32 address);
+    void writeDword(u32 address, u32 data);
 
 private:
     GBAHeader header;
