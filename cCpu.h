@@ -25,7 +25,7 @@ private:
     void executeOpcode();
 
 	u32 cpsr();
-	u32 cpsr(u32 value);
+	void cpsr(u32 value);
     
     cMemory memory;
 	

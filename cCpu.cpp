@@ -21,21 +21,48 @@ cCpu::~cCpu()
 
 bool cCpu::initCpu()
 {
-	cpuMode = ARM_MODE;
 	return true;
 }
+
+u32 cCpu::cpsr()
+{
+	u32 data = 0;
+	data = data | (modeBits & 0x1F);	//First the 5 bits of Mode Bits.
+	data = data | (tFlag << 5);
+	data = data | (fFlag << 6);
+	data = data | (iFlag << 7);
+	data = data | (qFlag << 27);
+	data = data | (vFlag << 28);
+	data = data | (cFlag << 29);
+	data = data | (zFlag << 30);
+	data = data | (nFlag << 31);
+	return data;
+}
+
+void cCpu::cpsr(u32 value)
+{
+	modeBits = value & 0x1F;
+	tFlag = (value >> 5) & 1;
+	fFlag = (value >> 6) & 1;
+	iFlag = (value >> 7) & 1;
+	qFlag = (value >> 27) & 1;
+	vFlag = (value >> 28) & 1;
+	cFlag = (value >> 29) & 1;
+	zFlag = (value >> 30) & 1;
+	nFlag = (value >> 31) & 1;
+}
+
 
 void cCpu::executeOpcode()
 {
 	word opcode;
 	byte offset, source, dest;
 
-	if (cpuMode == ARM_MODE) {
-	}
-	else if (cpuMode == THUMB_MODE) 
+	if (tFlag) 
 	{
+		// Thumb mode
 		opcode = memory.readWord(Registers[15]);
-		Registers[15]+=2;	//16 bits increment
+		Registers[15]+=2;	// 16 bits increment
 
 		if (opcode & 0xE000 == 0) {
 			switch ((opcode & 0x1800) >> 11) {
@@ -56,5 +83,9 @@ void cCpu::executeOpcode()
 				break;
 			}
 		}
+	}
+	else
+	{
+		// ARM Mode
 	}
 }
