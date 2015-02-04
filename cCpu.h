@@ -23,15 +23,17 @@ public:
 private:
     
     void executeOpcode();
+
+	u32 cpsr();
+	u32 cpsr(u32 value);
     
     cMemory memory;
-
-	//Esto debe ser eliminado, se sustituye por el registro CPSR
-    //int cpuMode;    //ARM or Thumb mode
-    //bool zFlag, nFlag, cFlag;
-	u32 CPSR;	//Aqui van las banderas
+	
+    bool nFlag, zFlag, cFlag, vFlag; 
+	bool qFlag, iFlag, fFlag, tFlag;
+	byte modeBits;		//Only 5 bits used
     u32 Registers[16];
-    u32 FIQRegisters[8];
+    u32 FIQRegisters[7];
     
     u32 cyclesCount;
 
