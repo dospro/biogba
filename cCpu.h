@@ -25,9 +25,11 @@ private:
     void executeOpcode();
     
     cMemory memory;
-    int cpuMode;    //ARM or Thumb mode
-    
-    bool zFlag, nFlag, cFlag;
+
+	//Esto debe ser eliminado, se sustituye por el registro CPSR
+    //int cpuMode;    //ARM or Thumb mode
+    //bool zFlag, nFlag, cFlag;
+	u32 CPSR;	//Aqui van las banderas
     u32 Registers[16];
     u32 FIQRegisters[8];
     
