@@ -1,7 +1,7 @@
 /* 
  * File:   cCpu.h
  * Author: dospro
- *
+ *         Jonatan Mendez Lopez
  * Created on 31 de enero de 2015, 09:29 PM
  */
 
