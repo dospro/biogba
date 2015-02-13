@@ -9,6 +9,7 @@
 #define	CCPU_H
 
 #include"cMemory.h"
+#include"macros.h"
 
 #define ARM_MODE 0
 #define THUMB_MODE 1
@@ -30,8 +31,8 @@ private:
     cMemory memory;
 	
     bool nFlag, zFlag, cFlag, vFlag; 
-	bool qFlag, iFlag, fFlag, tFlag;
-	byte modeBits;		//Only 5 bits used
+    bool qFlag, iFlag, fFlag, tFlag;
+    byte modeBits;		//Only 5 bits used
     u32 Registers[16];
     u32 FIQRegisters[7];
     
