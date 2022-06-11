@@ -2,6 +2,9 @@ import biogba
 
 type ADCOpcode = biogba.ADCOpcode
 type ADDOpcode = biogba.ADDOpcode
+type ANDOpcode = biogba.ANDOpcode
+type BOpcode = biogba.BOpcode
+
 type OpcodeCondition = biogba.OpcodeCondition
 type ShiftType = biogba.ShiftType
 // type ShiftOperand = biogba.ShiftOperand
@@ -123,4 +126,29 @@ fn test_add_default() {
 	opcode := ADDOpcode {}
 	hex_value := opcode.as_hex()
 	assert hex_value == 0xE280_0000
+}
+
+fn test_and_default() {
+	opcode := ANDOpcode {}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xE200_0000
+}
+
+// B, BL
+
+fn test_b() {
+	opcode := BOpcode {
+		target_address: 0xFF_FFFF
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xEAFF_FFFF
+}
+
+fn test_bl() {
+	opcode := BOpcode {
+		l_flag: true
+		target_address: 0x80_0000
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xEB80_0000
 }
