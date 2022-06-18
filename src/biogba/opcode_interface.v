@@ -68,7 +68,7 @@ pub fn (opcode &ArithmeticOpcode) as_hex() u32 {
 	condition_part := (u32(opcode.condition) & 0xF) << 28
 	rn_part := u32(opcode.rn) << 16
 	rd_part := u32(opcode.rd) << 12
-	s_part := u32(if opcode.s_bit { 0x10_0000 } else { 0x0 })	
+	s_part := u32(if opcode.s_bit { 0x10_0000 } else { 0x0 })
 	shift_operand_part := match opcode.shift_operand {
 		ShiftOperandImmediate {
 			u32(opcode.shift_operand.as_hex())

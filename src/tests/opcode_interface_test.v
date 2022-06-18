@@ -68,7 +68,7 @@ fn test_adc_operand_immediate() {
 	assert hex_value == 0xE2A0_02FF
 }
 
-fn test_adc_operand_register() {	
+fn test_adc_operand_register() {
 	opcode := ADCOpcode {
 		shift_operand: biogba.ShiftOperandRegister {
 			rm: 0xE
