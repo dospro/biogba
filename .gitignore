@@ -1,3 +1,11 @@
-.vscode
-*.v
+# Binaries for programs and plugins
 main
+biogba
+*.exe
+*.exe~
+*.so
+*.dylib
+*.dll
+vls.log
+*.v
+.vscode
