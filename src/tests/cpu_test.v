@@ -118,3 +118,53 @@ fn test_adc_immediate() {
 	expected := 0x4321_4321 + 0x3E0
 	assert obtained == expected
 }
+
+fn test_adc_register_lsl() {
+	mut cpu_state := CPUState {}
+	cpu_state.r[0xE] = 0x1000_1000
+	cpu_state.r[0x2] = 0x0001_0001
+	cpu_state.r[0x3] = 0x0000_0001
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+	opcode := ADCOpcode{
+		rd: 0x2
+		rn: 0xE
+		shift_operand: biogba.ShiftOperandRegister {
+			rm: 0x3
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 0x1F
+		}
+	}
+	cpu.execute_opcode(opcode.as_hex())
+
+	result := cpu.get_state()
+	obtained := u32(result.r[0x2])
+	expected := u32(0x9000_1000)
+	assert obtained == expected
+}
+
+fn test_adc_register_lsl_register() {
+	mut cpu_state := CPUState {}
+	cpu_state.r[0xE] = 0x1000_1000
+	cpu_state.r[0x2] = 0x0001_0001
+	cpu_state.r[0x3] = 0x0001_0003
+	cpu_state.r[0x4] = 0x0000_0002
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+	opcode := ADCOpcode{
+		rd: 0x2
+		rn: 0xE
+		shift_operand: biogba.ShiftOperandRegister {
+			rm: 0x3
+			register_shift: true
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 0x4
+		}
+	}
+	cpu.execute_opcode(opcode.as_hex())
+
+	result := cpu.get_state()
+	obtained := result.r[0x2]
+	expected := 0x1000_1000 + (0x1_0003 << 2)
+	assert obtained == expected
+}

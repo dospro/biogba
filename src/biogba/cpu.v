@@ -37,14 +37,28 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	rd := (opcode >> 12) & 0xF
 	c_part := if self.cpsr.c {u32(1)} else {u32(0)}
+	is_register_shift := ((opcode >> 25) & 1) == 0
 
-	rot_part := 2 * ((opcode >> 8) & 0xF)
-	mut value_part := opcode & 0xFF
+	mut operand_value := u32(0)
+	if is_register_shift {
+		is_register_value := ((opcode >> 4) & 1) == 1
+		rm := opcode & 0xF
+		if is_register_value {
+			value := (opcode >> 8) & 0xF
+			operand_value = self.r[rm] << self.r[value]
+		} else {
+			value := (opcode >> 7) & 0x1F
+			operand_value = self.r[rm] << value
+		}
+	} else {
+		rot_part := 2 * ((opcode >> 8) & 0xF)
+		operand_value = opcode & 0xFF
 
-	for _ in 0 .. rot_part {
-		bit := value_part & 1
-		value_part >>= 1
-		value_part |= (bit << 31)
+		for _ in 0 .. rot_part {
+			bit := operand_value & 1
+			operand_value >>= 1
+			operand_value |= (bit << 31)
+		}
 	}
-	self.r[rd] = self.r[rn] + c_part + value_part
+	self.r[rd] = self.r[rn] + c_part + operand_value
 }
