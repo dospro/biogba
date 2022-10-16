@@ -7,13 +7,13 @@ pub mut:
 
 pub struct CPUState {
 pub mut:
-	r [16]u32
+	r    [16]u32
 	cpsr CPSR
 }
 
 pub struct ARM7TDMI {
 mut:
-	r [16]u32
+	r    [16]u32
 	cpsr CPSR
 }
 
@@ -36,7 +36,7 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	rd := (opcode >> 12) & 0xF
-	c_part := if self.cpsr.c {u32(1)} else {u32(0)}
+	c_part := if self.cpsr.c { u32(1) } else { u32(0) }
 
 	operand_value := self.get_shift_operand_value(opcode)
 	self.r[rd] = self.r[rn] + c_part + operand_value
@@ -50,30 +50,34 @@ fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 	if is_register_shift {
 		shift_type := (opcode >> 5) & 3
 		is_register_value := ((opcode >> 4) & 1) == 1
-		shift_value := if is_register_value {self.r[(opcode >> 8) & 0xF]} else {(opcode >> 7) & 0x1F}
+		shift_value := if is_register_value {
+			self.r[(opcode >> 8) & 0xF]
+		} else {
+			(opcode >> 7) & 0x1F
+		}
 		rm := opcode & 0xF
+		mut result := self.r[rm]
 
 		operand_value = match shift_type {
 			0 {
-				mut result := self.r[rm]
 				for _ in 0 .. shift_value {
 					c_bit = (result & 0x8000_0000) != 0
 					result <<= 1
 				}
 				result
-				}
+			}
 			1 {
-				mut result := self.r[rm]
-				for _ in 0 .. shift_value {
+				final_shift_value := if shift_value == 0 { 32 } else { shift_value }
+				for _ in 0 .. final_shift_value {
 					c_bit = (result & 1) != 0
 					result >>= 1
 				}
 				result
 			}
 			2 {
-				mut result := self.r[rm]
+				final_shift_value := if shift_value == 0 { 32 } else { shift_value }
 				bit := result & 0x8000_0000
-				for _ in 0 .. shift_value {
+				for _ in 0 .. final_shift_value {
 					c_bit = (result & 1) != 0
 					result >>= 1
 					result |= bit
@@ -81,16 +85,25 @@ fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 				result
 			}
 			3 {
-				mut result := self.r[rm]
-				for _ in 0 .. shift_value {
-					c_bit = (result & 1) != 0
-					bit := (result & 1) << 31
+				if shift_value == 0 {
+					bit := result & 1
 					result >>= 1
-					result |= bit
+					c_flag_bit := if c_bit { u32(1) } else { u32(0) }
+					result |= c_flag_bit << 31
+					c_bit = bit != 0
+				} else {
+					for _ in 0 .. shift_value {
+						c_bit = (result & 1) != 0
+						bit := (result & 1) << 31
+						result >>= 1
+						result |= bit
+					}
 				}
 				result
 			}
-			else {0}
+			else {
+				0
+			}
 		}
 	} else {
 		rot_part := 2 * ((opcode >> 8) & 0xF)
@@ -98,6 +111,7 @@ fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 
 		for _ in 0 .. rot_part {
 			bit := operand_value & 1
+			c_bit = bit != 0
 			operand_value >>= 1
 			operand_value |= (bit << 31)
 		}

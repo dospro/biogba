@@ -7,5 +7,4 @@ biogba
 *.dylib
 *.dll
 vls.log
-*.v
 .vscode
