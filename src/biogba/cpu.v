@@ -3,6 +3,7 @@ module biogba
 pub struct CPSR {
 pub mut:
 	c bool
+	v bool
 }
 
 pub struct CPUState {
@@ -40,6 +41,7 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 
 	operand_value := self.get_shift_operand_value(opcode)
 	self.r[rd] = self.r[rn] + c_part + operand_value
+	self.cpsr.v = ((self.r[rn] ^ operand_value ^ self.r[rd]) & 0x8000_0000) != 0 
 }
 
 fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {

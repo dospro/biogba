@@ -653,9 +653,72 @@ fn test_adc_rxx() {
 }
 
 // Other flags
-fn test_adc_v_flag_set() {}
 
-fn test_adc_v_flag_reset() {}
+/*
+Flag v is set when there is an overflow in bit 31
+This mena that whenever 2 operands have the same sign bit
+the result should have the same sign bit
+In this test we add 1 to 0x7FFF_FFFF which sets bit 31 of the result
+So since both operands had bit 31 unset, the v flag gets set.
+*/
+fn test_adc_v_flag_set() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0x0] = 0x0000_0000
+	cpu_state.r[0x1] = 0x7FFF_FFFF
+	cpu_state.r[0x2] = 0x0000_0001	
+
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+
+	mut opcode := ADCOpcode{
+		rd: 0x0
+		rn: 0x1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 1
+		}
+	}
+
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()	
+	assert result.cpsr.v
+}
+
+/*
+Flag v is reset when there is no overflow in bit 31
+
+In this test we add 1 to 0x8FFF_FF00 which results in
+0x8FFF_FF01. Bit 31 remains as 1
+*/
+
+fn test_adc_v_flag_reset() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0x0] = 0x0000_0000
+	cpu_state.r[0x1] = 0x8FFF_FF00
+	cpu_state.r[0x2] = 0x0000_0001
+
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+
+	mut opcode := ADCOpcode{
+		rd: 0x0
+		rn: 0x1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 1
+		}
+	}
+
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()	
+	assert !result.cpsr.v
+}
 
 fn test_adc_z_flag_set() {}
 
