@@ -18,11 +18,46 @@ pub enum OpcodeCondition {
 	al
 }
 
+fn opcode_condition_from_value(value u32) ?OpcodeCondition {
+	return match value {
+		0 {.eq}
+		1 {.ne}
+		2 {.cs}
+		3 {.cc}
+		4 {.mi}
+		5 {.pl}
+		6 {.vs}
+		7 {.vc}
+		8 {.hi}
+		9 {.ls}
+		0xA {.ge}
+		0xB {.lt}
+		0xC {.gt}
+		0xD {.le}
+		0xE {.al}
+		else {
+			error("Unkown opcode condition for value $value")
+		}
+	}
+}
+
 pub enum ShiftType {
 	lsl
 	lsr
 	asr
 	ror
+}
+
+fn shift_type_from_value(value u32) ?ShiftType {
+	return match value {
+		0 {.lsl}
+		1 {.lsr}
+		2 {.asr}
+		3 {.ror}
+		else {
+			error("Unkown opcode shift oeprand type for value $value")
+		}
+	}
 }
 
 type ShiftOperand = ShiftOperandImmediate | ShiftOperandRegister

@@ -577,7 +577,7 @@ fn test_adc_lsr32() {
 /*
 In register immediate mode when we use ASR #0 it is interpreted as ASR #32
 Rm and c flag will be filled with bit31 of Rm.
-In this test rm=0x8000_0000 will be arithmetically shifted 32 bits right 
+In this test rm=0x8000_0000 will be arithmetically shifted 32 bits right
 leaving it with a value of 0xFFFF_FFFF.
 That is added to Rn which has 1 resulting in 0 as the final result in rd.
 */
@@ -665,7 +665,7 @@ fn test_adc_v_flag_set() {
 	mut cpu_state := CPUState{}
 	cpu_state.r[0x0] = 0x0000_0000
 	cpu_state.r[0x1] = 0x7FFF_FFFF
-	cpu_state.r[0x2] = 0x0000_0001	
+	cpu_state.r[0x2] = 0x0000_0001
 
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
@@ -683,7 +683,7 @@ fn test_adc_v_flag_set() {
 	}
 
 	cpu.execute_opcode(opcode.as_hex())
-	result := cpu.get_state()	
+	result := cpu.get_state()
 	assert result.cpsr.v
 }
 
@@ -716,15 +716,125 @@ fn test_adc_v_flag_reset() {
 	}
 
 	cpu.execute_opcode(opcode.as_hex())
-	result := cpu.get_state()	
+	result := cpu.get_state()
 	assert !result.cpsr.v
 }
 
-fn test_adc_z_flag_set() {}
+/*
+z flag is set when the result is 0
+even if there was an overflow
 
-fn test_adc_z_flag_reset() {}
+In the test we add 1 to 0xFFFF_FFFF which results in 0
+*/
+fn test_adc_z_flag_set() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0x0] = 0xFFFF_FFFF
+	cpu_state.r[0x1] = 0xFFFF_FFFF
+	cpu_state.r[0x2] = 0x0000_0001
 
-fn test_adc_n_flag_set() {}
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
 
-fn test_adc_n_flag_reset() {}
+	mut opcode := ADCOpcode{
+		rd: 0x0
+		rn: 0x1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 0
+		}
+	}
 
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert result.cpsr.z
+}
+
+/*
+z flag is reset if result is not 0
+*/
+fn test_adc_z_flag_reset() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0x0] = 0xFFFF_FFFF
+	cpu_state.r[0x1] = 0x7FFF_FFFF
+	cpu_state.r[0x2] = 0x0000_0001
+
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+
+	mut opcode := ADCOpcode{
+		rd: 0x0
+		rn: 0x1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 0
+		}
+	}
+
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert !result.cpsr.z
+}
+
+/*
+n flag is set when the result bit 31 is set
+*/
+fn test_adc_n_flag_set() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0x0] = 0xFFFF_FFFF
+	cpu_state.r[0x1] = 0x7FFF_FFFF
+	cpu_state.r[0x2] = 0x1000_0001
+
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+
+	mut opcode := ADCOpcode{
+		rd: 0x0
+		rn: 0x1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.asr
+			shift_value: 1
+		}
+	}
+
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert result.cpsr.n
+}
+
+/*
+n flag is reset when the result bit 31 is not set
+*/
+fn test_adc_n_flag_reset() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0x0] = 0xFFFF_FFFF
+	cpu_state.r[0x1] = 0x7FFF_0000
+	cpu_state.r[0x2] = 0x0000_1000
+
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+
+	mut opcode := ADCOpcode{
+		rd: 0x0
+		rn: 0x1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.asr
+			shift_value: 1
+		}
+	}
+
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert !result.cpsr.n
+}
