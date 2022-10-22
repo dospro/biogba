@@ -67,12 +67,18 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 	} else if condition == .le && !(self.cpsr.z || self.cpsr.n != self.cpsr.v) {
 		return
 	}
+	is_adc_opcode := ((opcode >> 21) & 1) == 1
 	rn := (opcode >> 16) & 0xF
 	rd := (opcode >> 12) & 0xF
 	c_part := if self.cpsr.c { u32(1) } else { u32(0) }
+	
 
 	operand_value := self.get_shift_operand_value(opcode)
-	self.r[rd] = self.r[rn] + c_part + operand_value
+	if is_adc_opcode {
+		self.r[rd] = self.r[rn] + c_part + operand_value
+	} else {
+		self.r[rd] = self.r[rn] + operand_value	
+	}
 	self.cpsr.v = ((self.r[rn] ^ operand_value ^ self.r[rd]) & 0x8000_0000) != 0
 	self.cpsr.z = self.r[rd] == 0
 	self.cpsr.n = (self.r[rd] & 0x8000_0000) != 0
