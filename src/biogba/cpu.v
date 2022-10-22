@@ -37,8 +37,34 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 }
 
 pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
-	condition := biogba.opcode_condition_from_value(opcode >> 28) or {panic("blabla")}
+	condition := biogba.opcode_condition_from_value(opcode >> 28) or {panic(err)}
 	if condition == .eq && !self.cpsr.z {
+		return
+	} else if condition == .ne && self.cpsr.z {
+		return
+	} else if condition == .cs && !self.cpsr.c {
+		return
+	} else if condition == .cc && self.cpsr.c {
+		return
+	} else if condition == .mi && !self.cpsr.n {
+		return
+	} else if condition == .pl && self.cpsr.n {
+		return
+	} else if condition == .vs && !self.cpsr.v {
+		return
+	} else if condition == .vc && self.cpsr.v {
+		return
+	} else if condition == .hi && !self.cpsr.c && self.cpsr.z {
+		return
+	} else if condition == .ls && !(!self.cpsr.c || self.cpsr.z) {
+		return
+	} else if condition == .ge && self.cpsr.n != self.cpsr.v {
+		return
+	} else if condition == .lt && self.cpsr.n == self.cpsr.v {
+		return
+	} else if condition == .gt && !(!self.cpsr.z && self.cpsr.n == self.cpsr.v) {
+		return
+	} else if condition == .le && !(self.cpsr.z || self.cpsr.n != self.cpsr.v) {
 		return
 	}
 	rn := (opcode >> 16) & 0xF
