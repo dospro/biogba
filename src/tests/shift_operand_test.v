@@ -148,3 +148,89 @@ fn test_register_lsr_register() {
 	shift_operand_value := cpu.get_shift_operand_value(opcode.as_hex())
 	assert shift_operand_value == 0x1F
 }
+
+fn test_register_asr_immediate() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0xE] = 0x1000_1000
+	cpu_state.r[0x2] = 0x0001_0001
+	cpu_state.r[0x3] = 0x8000_00F0
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+	opcode := ADDOpcode{
+		rd: 0x2
+		rn: 0xE
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x3
+			register_shift: false
+			shift_type: biogba.ShiftType.asr
+			shift_value: 0x4
+		}
+	}
+	shift_operand_value := cpu.get_shift_operand_value(opcode.as_hex())
+	assert shift_operand_value == 0xF800_000F
+}
+
+fn test_register_asr_register() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0xE] = 0x1000_1000
+	cpu_state.r[0x2] = 0x0001_0001
+	cpu_state.r[0x3] = 0xFFF0_10FF
+	cpu_state.r[0x4] = 0x0000_0010
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+	opcode := ADDOpcode{
+		rd: 0x2
+		rn: 0xE
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x3
+			register_shift: true
+			shift_type: biogba.ShiftType.asr
+			shift_value: 0x4
+		}
+	}
+	shift_operand_value := cpu.get_shift_operand_value(opcode.as_hex())
+	assert shift_operand_value == 0xFFFF_FFF0
+}
+
+fn test_register_ror_immediate() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0xE] = 0x1000_1000
+	cpu_state.r[0x2] = 0x0001_0001
+	cpu_state.r[0x3] = 0x8000_0BF1
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+	opcode := ADDOpcode{
+		rd: 0x2
+		rn: 0xE
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x3
+			register_shift: false
+			shift_type: biogba.ShiftType.ror
+			shift_value: 0x8
+		}
+	}
+	shift_operand_value := cpu.get_shift_operand_value(opcode.as_hex())
+	assert shift_operand_value == 0xF180_000B
+}
+
+fn test_register_ror_register() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0xE] = 0x1000_1000
+	cpu_state.r[0x2] = 0x0001_0001
+	cpu_state.r[0x3] = 0x0000_10FF
+	cpu_state.r[0x4] = 0x0000_0010
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+	opcode := ADDOpcode{
+		rd: 0x2
+		rn: 0xE
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0x3
+			register_shift: true
+			shift_type: biogba.ShiftType.ror
+			shift_value: 0x4
+		}
+	}
+	shift_operand_value := cpu.get_shift_operand_value(opcode.as_hex())
+	assert shift_operand_value == 0x10FF_0000
+}
