@@ -71,25 +71,38 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	rd := (opcode >> 12) & 0xF
 
+	bl_opcode_instruction := (opcode >> 25) & 7
 	opcode_instruction := (opcode >> 21) & 0xF
 	c_part := if self.cpsr.c { u32(1) } else { u32(0) }
 	operand_value := self.get_shift_operand_value(opcode)
-	match opcode_instruction {
-		0 { // AND
-			self.r[rd] = self.r[rn] & operand_value
+	if bl_opcode_instruction == 5 {
+		mut target_address := (opcode & 0xFF_FFFF) << 2
+		l_flag := ((opcode >> 24) & 1) != 0
+		if (target_address & 0x200_0000) != 0 {
+			target_address |= 0xFC00_0000
 		}
-		4 { // ADD
-			self.r[rd] = self.r[rn] + operand_value
+		if l_flag {
+			self.r[14] = self.r[15] + 4
 		}
-		5 { // ADC
-			self.r[rd] = self.r[rn] + c_part + operand_value
+		self.r[15] += target_address
+	} else {
+		match opcode_instruction {
+			0 { // AND
+				self.r[rd] = self.r[rn] & operand_value
+			}
+			4 { // ADD
+				self.r[rd] = self.r[rn] + operand_value
+			}
+			5 { // ADC
+				self.r[rd] = self.r[rn] + c_part + operand_value
+			}
+			else {}
 		}
-		else {}
-	}
 
-	self.cpsr.v = ((self.r[rn] ^ operand_value ^ self.r[rd]) & 0x8000_0000) != 0
-	self.cpsr.z = self.r[rd] == 0
-	self.cpsr.n = (self.r[rd] & 0x8000_0000) != 0
+		self.cpsr.v = ((self.r[rn] ^ operand_value ^ self.r[rd]) & 0x8000_0000) != 0
+		self.cpsr.z = self.r[rd] == 0
+		self.cpsr.n = (self.r[rd] & 0x8000_0000) != 0
+	}
 }
 
 fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {

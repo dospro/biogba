@@ -25,7 +25,6 @@ fn test_and_operation() {
 			value: 0xFF
 		}
 	}
-	print("Executing AND opcode")
 	cpu.execute_opcode(opcode.as_hex())
 
 	result := cpu.get_state()
