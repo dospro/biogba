@@ -37,7 +37,7 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 }
 
 pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
-	condition := biogba.opcode_condition_from_value(opcode >> 28) or {panic(err)}
+	condition := opcode_condition_from_value(opcode >> 28) or { panic(err) }
 	if condition == .eq && !self.cpsr.z {
 		return
 	} else if condition == .ne && self.cpsr.z {
@@ -71,13 +71,12 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	rd := (opcode >> 12) & 0xF
 	c_part := if self.cpsr.c { u32(1) } else { u32(0) }
-	
 
 	operand_value := self.get_shift_operand_value(opcode)
 	if is_adc_opcode {
 		self.r[rd] = self.r[rn] + c_part + operand_value
 	} else {
-		self.r[rd] = self.r[rn] + operand_value	
+		self.r[rd] = self.r[rn] + operand_value
 	}
 	self.cpsr.v = ((self.r[rn] ^ operand_value ^ self.r[rd]) & 0x8000_0000) != 0
 	self.cpsr.z = self.r[rd] == 0
@@ -90,7 +89,7 @@ fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 	mut operand_value := u32(0)
 	mut c_bit := self.cpsr.c
 	if is_register_shift {
-		shift_type := biogba.shift_type_from_value((opcode >> 5) & 3) or {panic("")}
+		shift_type := shift_type_from_value((opcode >> 5) & 3) or { panic('') }
 		is_register_value := ((opcode >> 4) & 1) == 1
 		shift_value := if is_register_value {
 			self.r[(opcode >> 8) & 0xF]

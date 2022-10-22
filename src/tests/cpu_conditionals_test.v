@@ -15,7 +15,6 @@ executed.
 The conditional function will do the actual opcode execution and asserts
 
 In each test case we just set the right flags to either execute or skip de opcode.
-
 */
 
 fn conditional(original_cpu_state CPUState, conditional biogba.OpcodeCondition, skipped bool) {
@@ -32,7 +31,10 @@ fn conditional(original_cpu_state CPUState, conditional biogba.OpcodeCondition, 
 		rd: 0x0
 		rn: 0x1
 		s_bit: true
-		shift_operand: biogba.ShiftOperandImmediate {value: 1, rotate: 1}
+		shift_operand: biogba.ShiftOperandImmediate{
+			value: 1
+			rotate: 1
+		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
 	if skipped {
@@ -156,7 +158,7 @@ fn test_adc_hi_condition() {
 Unsigned lower or same
 Runs opcode when c is not set or z is set
 c=0 or z=1
-=> 
+=>
 not (c=0 and z=1)
 */
 fn test_adc_ls_condition() {

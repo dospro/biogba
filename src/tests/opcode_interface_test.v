@@ -1,4 +1,4 @@
-import biogba
+import src.biogba
 
 type ADCOpcode = biogba.ADCOpcode
 type ADDOpcode = biogba.ADDOpcode
@@ -7,6 +7,7 @@ type BOpcode = biogba.BOpcode
 
 type OpcodeCondition = biogba.OpcodeCondition
 type ShiftType = biogba.ShiftType
+
 // type ShiftOperand = biogba.ShiftOperand
 // type ShiftOperandImmediate = biogba.ShiftOperandImmediate
 // type ShiftOperandRegister = biogba.ShiftOperandRegister
@@ -18,7 +19,7 @@ fn test_adc_opcode_default() {
 }
 
 fn test_adc_eq_condition() {
-	opcode := ADCOpcode {
+	opcode := ADCOpcode{
 		condition: OpcodeCondition.eq
 	}
 	hex_value := opcode.as_hex()
@@ -26,7 +27,7 @@ fn test_adc_eq_condition() {
 }
 
 fn test_adc_ne_condition() {
-	opcode := ADCOpcode {
+	opcode := ADCOpcode{
 		condition: OpcodeCondition.ne
 	}
 	hex_value := opcode.as_hex()
@@ -34,7 +35,7 @@ fn test_adc_ne_condition() {
 }
 
 fn test_adc_set_rn() {
-	opcode := ADCOpcode {
+	opcode := ADCOpcode{
 		rn: 0xF
 	}
 	hex_value := opcode.as_hex()
@@ -42,7 +43,7 @@ fn test_adc_set_rn() {
 }
 
 fn test_adc_set_rd() {
-	opcode := ADCOpcode {
+	opcode := ADCOpcode{
 		rd: 0xF
 	}
 	hex_value := opcode.as_hex()
@@ -50,7 +51,7 @@ fn test_adc_set_rd() {
 }
 
 fn test_adc_set_s_bit() {
-	opcode := ADCOpcode {
+	opcode := ADCOpcode{
 		s_bit: true
 	}
 	hex_value := opcode.as_hex()
@@ -58,8 +59,8 @@ fn test_adc_set_s_bit() {
 }
 
 fn test_adc_operand_immediate() {
-	opcode := ADCOpcode {
-		shift_operand: biogba.ShiftOperandImmediate {
+	opcode := ADCOpcode{
+		shift_operand: biogba.ShiftOperandImmediate{
 			value: 0xFF
 			rotate: 0x2
 		}
@@ -69,8 +70,8 @@ fn test_adc_operand_immediate() {
 }
 
 fn test_adc_operand_register() {
-	opcode := ADCOpcode {
-		shift_operand: biogba.ShiftOperandRegister {
+	opcode := ADCOpcode{
+		shift_operand: biogba.ShiftOperandRegister{
 			rm: 0xE
 			register_shift: false
 			shift_type: ShiftType.lsl
@@ -82,8 +83,8 @@ fn test_adc_operand_register() {
 }
 
 fn test_adc_operand_register_register() {
-	opcode := ADCOpcode {
-		shift_operand: biogba.ShiftOperandRegister {
+	opcode := ADCOpcode{
+		shift_operand: biogba.ShiftOperandRegister{
 			rm: 0xE
 			register_shift: true
 			shift_type: ShiftType.lsl
@@ -95,8 +96,8 @@ fn test_adc_operand_register_register() {
 }
 
 fn test_adc_operand_register_immediate_lsr() {
-	opcode := ADCOpcode {
-		shift_operand: biogba.ShiftOperandRegister {
+	opcode := ADCOpcode{
+		shift_operand: biogba.ShiftOperandRegister{
 			rm: 0xE
 			register_shift: false
 			shift_type: ShiftType.lsr
@@ -108,8 +109,8 @@ fn test_adc_operand_register_immediate_lsr() {
 }
 
 fn test_adc_operand_register_register_lsr() {
-	opcode := ADCOpcode {
-		shift_operand: biogba.ShiftOperandRegister {
+	opcode := ADCOpcode{
+		shift_operand: biogba.ShiftOperandRegister{
 			rm: 0xE
 			register_shift: true
 			shift_type: ShiftType.lsr
@@ -123,13 +124,13 @@ fn test_adc_operand_register_register_lsr() {
 // ADD
 
 fn test_add_default() {
-	opcode := ADDOpcode {}
+	opcode := ADDOpcode{}
 	hex_value := opcode.as_hex()
 	assert hex_value == 0xE280_0000
 }
 
 fn test_and_default() {
-	opcode := ANDOpcode {}
+	opcode := ANDOpcode{}
 	hex_value := opcode.as_hex()
 	assert hex_value == 0xE200_0000
 }
@@ -137,7 +138,7 @@ fn test_and_default() {
 // B, BL
 
 fn test_b() {
-	opcode := BOpcode {
+	opcode := BOpcode{
 		target_address: 0xFF_FFFF
 	}
 	hex_value := opcode.as_hex()
@@ -145,7 +146,7 @@ fn test_b() {
 }
 
 fn test_bl() {
-	opcode := BOpcode {
+	opcode := BOpcode{
 		l_flag: true
 		target_address: 0x80_0000
 	}
