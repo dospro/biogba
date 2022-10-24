@@ -157,3 +157,12 @@ pub fn (self BOpcode) as_hex() u32 {
 	l_part := if self.l_flag { u32(0x100_0000) } else { u32(0) }
 	return condition_part | l_part | self.target_address | opcode_part
 }
+
+pub struct BICOpcode {
+	ArithmeticOpcode
+}
+
+pub fn (opcode BICOpcode) as_hex() u32 {
+	opcode_part := u32(0x1C0_0000)
+	return (opcode.ArithmeticOpcode).as_hex() | opcode_part
+}

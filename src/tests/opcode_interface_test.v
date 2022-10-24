@@ -8,9 +8,6 @@ type BOpcode = biogba.BOpcode
 type OpcodeCondition = biogba.OpcodeCondition
 type ShiftType = biogba.ShiftType
 
-// type ShiftOperand = biogba.ShiftOperand
-// type ShiftOperandImmediate = biogba.ShiftOperandImmediate
-// type ShiftOperandRegister = biogba.ShiftOperandRegister
 
 fn test_adc_opcode_default() {
 	opcode := ADCOpcode{}
@@ -152,4 +149,29 @@ fn test_bl() {
 	}
 	hex_value := opcode.as_hex()
 	assert hex_value == 0xEB80_0000
+}
+
+// BIC
+
+fn test_bic_default() {
+	opcode := biogba.BICOpcode{}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xE3C0_0000
+}
+
+fn test_bix_complex() {
+	opcode := biogba.BICOpcode{
+		condition: biogba.OpcodeCondition.gt
+		rd: 0x7
+		rn: 0xC
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister{
+			rm: 0xA
+			register_shift: true
+			shift_type: ShiftType.lsr
+			shift_value: 0xE
+		}
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xC1DC_7E3A
 }
