@@ -166,3 +166,47 @@ pub fn (opcode BICOpcode) as_hex() u32 {
 	opcode_part := u32(0x1C0_0000)
 	return (opcode.ArithmeticOpcode).as_hex() | opcode_part
 }
+
+pub struct BXOpcode {
+	condition OpcodeCondition=OpcodeCondition.al
+	rm u8
+}
+
+pub fn (opcode BXOpcode) as_hex() u32 {
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	opcode_part := u32(0x012F_FF10)
+	return condition_part | opcode_part | opcode.rm
+}
+
+pub struct CMNOpcode {
+	ArithmeticOpcode
+}
+
+pub fn (opcode CMNOpcode) as_hex() u32 {
+	opcode_part := u32(0x150_0000)
+	if !opcode.s_bit {
+		panic("CMN Opcode always has S bit set")
+	}
+	return opcode_part | opcode.ArithmeticOpcode.as_hex()
+}
+
+pub struct CMPOpcode {
+	ArithmeticOpcode
+}
+
+pub fn (opcode CMPOpcode) as_hex() u32 {
+	opcode_part := u32(0x170_0000)
+	if !opcode.s_bit {
+		panic("CMN Opcode always has S bit set")
+	}
+	return opcode_part | opcode.ArithmeticOpcode.as_hex()
+}
+
+pub struct EOROpcode {
+	ArithmeticOpcode
+}
+
+pub fn (opcode EOROpcode) as_hex() u32 {
+	opcode_part := u32(0x0020_0000)
+	return opcode_part | opcode.ArithmeticOpcode.as_hex()
+}

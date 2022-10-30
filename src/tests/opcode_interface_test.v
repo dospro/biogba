@@ -4,6 +4,7 @@ type ADCOpcode = biogba.ADCOpcode
 type ADDOpcode = biogba.ADDOpcode
 type ANDOpcode = biogba.ANDOpcode
 type BOpcode = biogba.BOpcode
+type BXOpcode = biogba.BXOpcode
 
 type OpcodeCondition = biogba.OpcodeCondition
 type ShiftType = biogba.ShiftType
@@ -174,4 +175,69 @@ fn test_bix_complex() {
 	}
 	hex_value := opcode.as_hex()
 	assert hex_value == 0xC1DC_7E3A
+}
+
+// BX Branch and Exchange
+
+fn test_bx() {
+	opcode := biogba.BXOpcode{
+		condition: biogba.OpcodeCondition.ne
+		rm: 0x2
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0x112F_FF12
+}
+
+// CMN Compare negative
+
+fn text_cmn() {
+	opcode := biogba.CMNOpcode{
+		condition: biogba.OpcodeCondition.lt
+		rd: 0x1
+		rn: 0x2
+		shift_operand: biogba.ShiftOperandImmediate{
+			rotate: 1
+			value: 1
+		}
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xB351_2101
+}
+
+// CMN Compare negative
+
+fn text_cmp() {
+	opcode := biogba.CMPOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 0x1
+		rn: 0x2
+		shift_operand: biogba.ShiftOperandImmediate{
+			rotate: 1
+			value: 1
+		}
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xE371_2101
+}
+
+// EOR Bit wise exclusive OR
+
+fn test_eor_default() {
+	opcode := biogba.EOROpcode{}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xE220_0000
+}
+
+fn test_eor() {
+	opcode := biogba.EOROpcode{
+		condition: biogba.OpcodeCondition.eq
+		rd: 0xA
+		rn: 0xB
+		shift_operand: biogba.ShiftOperandImmediate{
+			rotate: 2
+			value: 2
+		}
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0x022B_A202
 }
