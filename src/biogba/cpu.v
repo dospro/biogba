@@ -71,7 +71,7 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	rd := (opcode >> 12) & 0xF
 
-	bl_opcode_instruction := (opcode >> 25) & 7
+	bl_opcode_instruction := (opcode >> 25) & 0xF
 	opcode_instruction := (opcode >> 21) & 0xF
 	c_part := if self.cpsr.c { u32(1) } else { u32(0) }
 	operand_value := self.get_shift_operand_value(opcode)
@@ -95,6 +95,9 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 			}
 			5 { // ADC
 				self.r[rd] = self.r[rn] + c_part + operand_value
+			}
+			0xE { // BIC
+				self.r[rd] = self.r[rn] &  ~operand_value
 			}
 			else {}
 		}
