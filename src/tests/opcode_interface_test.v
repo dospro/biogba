@@ -204,7 +204,7 @@ fn text_cmn() {
 	assert hex_value == 0xB351_2101
 }
 
-// CMN Compare negative
+// CMP Compare negative
 
 fn text_cmp() {
 	opcode := biogba.CMPOpcode{

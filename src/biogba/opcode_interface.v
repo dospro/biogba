@@ -197,7 +197,7 @@ pub struct CMPOpcode {
 pub fn (opcode CMPOpcode) as_hex() u32 {
 	opcode_part := u32(0x170_0000)
 	if !opcode.s_bit {
-		panic("CMN Opcode always has S bit set")
+		panic("CMP Opcode always has S bit set")
 	}
 	return opcode_part | opcode.ArithmeticOpcode.as_hex()
 }
