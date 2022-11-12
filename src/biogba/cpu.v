@@ -6,6 +6,8 @@ pub mut:
 	v bool
 	z bool
 	n bool
+
+	t bool
 }
 
 pub struct CPUState {
@@ -75,7 +77,14 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 	opcode_instruction := (opcode >> 21) & 0xF
 	c_part := if self.cpsr.c { u32(1) } else { u32(0) }
 	operand_value := self.get_shift_operand_value(opcode)
-	if bl_opcode_instruction == 5 {
+	if (opcode & 0x0FFF_FFF0) == 0x12F_FF10 { // BX
+		rm := opcode & 0xF
+		if (self.r[rm] & 1) != 0 {
+			self.cpsr.t = true
+		}
+		self.r[15] = self.r[rm] & 0xFFFF_FFFE
+	}
+	else if bl_opcode_instruction == 5 {
 		mut target_address := (opcode & 0xFF_FFFF) << 2
 		l_flag := ((opcode >> 24) & 1) != 0
 		if (target_address & 0x200_0000) != 0 {
