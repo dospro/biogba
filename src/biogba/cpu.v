@@ -39,81 +39,88 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 }
 
 pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
+	// Conditional
 	condition := opcode_condition_from_value(opcode >> 28) or { panic(err) }
-	if condition == .eq && !self.cpsr.z {
-		return
-	} else if condition == .ne && self.cpsr.z {
-		return
-	} else if condition == .cs && !self.cpsr.c {
-		return
-	} else if condition == .cc && self.cpsr.c {
-		return
-	} else if condition == .mi && !self.cpsr.n {
-		return
-	} else if condition == .pl && self.cpsr.n {
-		return
-	} else if condition == .vs && !self.cpsr.v {
-		return
-	} else if condition == .vc && self.cpsr.v {
-		return
-	} else if condition == .hi && !self.cpsr.c && self.cpsr.z {
-		return
-	} else if condition == .ls && !(!self.cpsr.c || self.cpsr.z) {
-		return
-	} else if condition == .ge && self.cpsr.n != self.cpsr.v {
-		return
-	} else if condition == .lt && self.cpsr.n == self.cpsr.v {
-		return
-	} else if condition == .gt && !(!self.cpsr.z && self.cpsr.n == self.cpsr.v) {
-		return
-	} else if condition == .le && !(self.cpsr.z || self.cpsr.n != self.cpsr.v) {
+	if !self.should_execute(condition) {
 		return
 	}
 
-	rn := (opcode >> 16) & 0xF
-	rd := (opcode >> 12) & 0xF
-
-	bl_opcode_instruction := (opcode >> 25) & 0xF
-	opcode_instruction := (opcode >> 21) & 0xF
+	// Get higher 2 bits after condition
+	opcode_high_bits := (opcode >> 26) & 3
 	c_part := if self.cpsr.c { u32(1) } else { u32(0) }
-	operand_value := self.get_shift_operand_value(opcode)
-	if (opcode & 0x0FFF_FFF0) == 0x12F_FF10 { // BX
-		rm := opcode & 0xF
-		if (self.r[rm] & 1) != 0 {
-			self.cpsr.t = true
+	match opcode_high_bits {
+		0 {
+			if (opcode & 0x0FFF_FFF0) == 0x12F_FF10 { // BX
+				rm := opcode & 0xF
+				if (self.r[rm] & 1) != 0 {
+					self.cpsr.t = true
+				}
+				self.r[15] = self.r[rm] & 0xFFFF_FFFE
+			} else {
+				data_processing_opcode := (opcode >> 21) & 0xF
+				rn := (opcode >> 16) & 0xF
+				rd := (opcode >> 12) & 0xF
+				operand_value := self.get_shift_operand_value(opcode)
+				match data_processing_opcode {
+					0 { // AND
+						self.r[rd] = self.r[rn] & operand_value
+					}
+					4 { // ADD
+						self.r[rd] = self.r[rn] + operand_value
+					}
+					5 { // ADC
+						self.r[rd] = self.r[rn] + c_part + operand_value
+					}
+					0xE { // BIC
+						self.r[rd] = self.r[rn] & ~operand_value
+					}
+					else {}
+				}
+				self.cpsr.v = ((self.r[rn] ^ operand_value ^ self.r[rd]) & 0x8000_0000) != 0
+				self.cpsr.z = self.r[rd] == 0
+				self.cpsr.n = (self.r[rd] & 0x8000_0000) != 0
+			}
 		}
-		self.r[15] = self.r[rm] & 0xFFFF_FFFE
+		1 {}
+		2 {
+			// B BL
+			if ((opcode >> 25) & 0xF) == 5 {
+				mut target_address := (opcode & 0xFF_FFFF) << 2
+				l_flag := ((opcode >> 24) & 1) != 0
+				if (target_address & 0x200_0000) != 0 {
+					target_address |= 0xFC00_0000
+				}
+				if l_flag {
+					self.r[14] = self.r[15] + 4
+				}
+				self.r[15] += target_address
+			}
+		}
+		3 {}
+		else {}
 	}
-	else if bl_opcode_instruction == 5 {
-		mut target_address := (opcode & 0xFF_FFFF) << 2
-		l_flag := ((opcode >> 24) & 1) != 0
-		if (target_address & 0x200_0000) != 0 {
-			target_address |= 0xFC00_0000
-		}
-		if l_flag {
-			self.r[14] = self.r[15] + 4
-		}
-		self.r[15] += target_address
-	} else {
-		match opcode_instruction {
-			0 { // AND
-				self.r[rd] = self.r[rn] & operand_value
-			}
-			4 { // ADD
-				self.r[rd] = self.r[rn] + operand_value
-			}
-			5 { // ADC
-				self.r[rd] = self.r[rn] + c_part + operand_value
-			}
-			0xE { // BIC
-				self.r[rd] = self.r[rn] &  ~operand_value
-			}
-			else {}
-		}
+}
 
-		self.cpsr.v = ((self.r[rn] ^ operand_value ^ self.r[rd]) & 0x8000_0000) != 0
-		self.cpsr.z = self.r[rd] == 0
-		self.cpsr.n = (self.r[rd] & 0x8000_0000) != 0
+/*
+Evaluate condition. Opcode should execute if the result is true
+*/
+fn (self ARM7TDMI) should_execute(condition OpcodeCondition) bool {
+	match true {
+		condition == .eq && !self.cpsr.z, condition == .ne && self.cpsr.z,
+		condition == .cs && !self.cpsr.c, condition == .cc && self.cpsr.c,
+		condition == .mi && !self.cpsr.n, condition == .pl && self.cpsr.n,
+		condition == .vs && !self.cpsr.v, condition == .vc && self.cpsr.v,
+		condition == .hi && !self.cpsr.c && self.cpsr.z,
+		condition == .ls && !(!self.cpsr.c || self.cpsr.z),
+		condition == .ge && self.cpsr.n != self.cpsr.v,
+		condition == .lt && self.cpsr.n == self.cpsr.v,
+		condition == .gt && !(!self.cpsr.z && self.cpsr.n == self.cpsr.v),
+		condition == .le && !(self.cpsr.z || self.cpsr.n != self.cpsr.v) {
+			return false
+		}
+		else {
+			return true
+		}
 	}
 }
 
