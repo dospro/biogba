@@ -190,7 +190,7 @@ fn test_bx() {
 
 // CMN Compare negative
 
-fn text_cmn() {
+fn test_cmn() {
 	opcode := biogba.CMNOpcode{
 		condition: biogba.OpcodeCondition.lt
 		rd: 0x1
@@ -201,12 +201,12 @@ fn text_cmn() {
 		}
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0xB351_2101
+	assert hex_value == 0xB372_1101
 }
 
 // CMP Compare negative
 
-fn text_cmp() {
+fn test_cmp() {
 	opcode := biogba.CMPOpcode{
 		condition: biogba.OpcodeCondition.al
 		rd: 0x1
@@ -217,7 +217,7 @@ fn text_cmp() {
 		}
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0xE371_2101
+	assert hex_value == 0xE352_1101
 }
 
 // EOR Bit wise exclusive OR

@@ -180,10 +180,11 @@ pub fn (opcode BXOpcode) as_hex() u32 {
 
 pub struct CMNOpcode {
 	ArithmeticOpcode
+	s_bit bool = true
 }
 
 pub fn (opcode CMNOpcode) as_hex() u32 {
-	opcode_part := u32(0x150_0000)
+	opcode_part := u32(0x170_0000)
 	if !opcode.s_bit {
 		panic("CMN Opcode always has S bit set")
 	}
@@ -192,10 +193,11 @@ pub fn (opcode CMNOpcode) as_hex() u32 {
 
 pub struct CMPOpcode {
 	ArithmeticOpcode
+	s_bit bool = true
 }
 
 pub fn (opcode CMPOpcode) as_hex() u32 {
-	opcode_part := u32(0x170_0000)
+	opcode_part := u32(0x150_0000)
 	if !opcode.s_bit {
 		panic("CMP Opcode always has S bit set")
 	}

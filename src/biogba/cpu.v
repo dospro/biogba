@@ -61,24 +61,34 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				rn := (opcode >> 16) & 0xF
 				rd := (opcode >> 12) & 0xF
 				operand_value := self.get_shift_operand_value(opcode)
-				match data_processing_opcode {
+				result := match data_processing_opcode {
 					0 { // AND
 						self.r[rd] = self.r[rn] & operand_value
+						self.r[rd]
 					}
 					4 { // ADD
 						self.r[rd] = self.r[rn] + operand_value
+						self.r[rd]
 					}
 					5 { // ADC
 						self.r[rd] = self.r[rn] + c_part + operand_value
+						self.r[rd]
+					}
+					0xA { // CMP
+						self.r[rn] + operand_value
+					}
+					0xB { // CMN
+						self.r[rn] + operand_value
 					}
 					0xE { // BIC
 						self.r[rd] = self.r[rn] & ~operand_value
+						self.r[rd]
 					}
-					else {}
+					else {0}
 				}
-				self.cpsr.v = ((self.r[rn] ^ operand_value ^ self.r[rd]) & 0x8000_0000) != 0
-				self.cpsr.z = self.r[rd] == 0
-				self.cpsr.n = (self.r[rd] & 0x8000_0000) != 0
+				self.cpsr.v = ((self.r[rn] ^ operand_value ^ result) & 0x8000_0000) != 0
+				self.cpsr.z = result == 0
+				self.cpsr.n = (result & 0x8000_0000) != 0
 			}
 		}
 		1 {}
