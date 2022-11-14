@@ -75,7 +75,7 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 						self.r[rd]
 					}
 					0xA { // CMP
-						self.r[rn] + operand_value
+						self.r[rn] - operand_value
 					}
 					0xB { // CMN
 						self.r[rn] + operand_value

@@ -27,7 +27,7 @@ fn test_cmp() {
 	result := cpu.get_state()
 
 	assert result.r[0] == 0
-	assert !result.cpsr.z
+	assert result.cpsr.z
 	assert !result.cpsr.v
 	assert !result.cpsr.n
 }
@@ -37,12 +37,12 @@ Test the CMP operation with 2 values
 
 The compares 2 values which updates cpsr.
 
-The test adds 1 to -1 so the result (0) sets flags z and v
+The test substract 2 to 1 so the result (-1) sets flags v and n
 */
 fn test_cmp_flags() {
 	mut cpu_state := CPUState{}
 	
-	cpu_state.r[1] = 0xFFFF_FFFF
+	cpu_state.r[1] = 0x1
 
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
@@ -50,7 +50,7 @@ fn test_cmp_flags() {
 		rn: 0x1
 		shift_operand: biogba.ShiftOperandImmediate {
 			rotate: 0
-			value: 1
+			value: 2
 		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -58,7 +58,7 @@ fn test_cmp_flags() {
 	result := cpu.get_state()
 
 	assert result.r[0] == 0
-	assert result.cpsr.z
+	assert !result.cpsr.z
 	assert result.cpsr.v
-	assert !result.cpsr.n
+	assert result.cpsr.n
 }
