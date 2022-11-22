@@ -66,6 +66,11 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 						self.r[rd] = self.r[rn] & operand_value
 						self.r[rd]
 					}
+					1 { // EOR
+						println(operand_value)
+						self.r[rd] = self.r[rn] ^ operand_value
+						self.r[rd]
+					}
 					4 { // ADD
 						self.r[rd] = self.r[rn] + operand_value
 						self.r[rd]
