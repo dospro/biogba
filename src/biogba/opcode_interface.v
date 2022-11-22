@@ -1,5 +1,24 @@
 module biogba
 
+pub enum Register {
+	r0
+	r1
+	r2
+	r3
+	r4
+	r5
+	r6
+	r7
+	r8
+	r9
+	r10
+	r11
+	r12
+	r13
+	r14
+	r15
+}
+
 pub enum OpcodeCondition {
 	eq
 	ne
@@ -211,4 +230,27 @@ pub struct EOROpcode {
 pub fn (opcode EOROpcode) as_hex() u32 {
 	opcode_part := u32(0x0020_0000)
 	return opcode_part | opcode.ArithmeticOpcode.as_hex()
+}
+
+pub struct LDMOpcode {
+	condition OpcodeCondition = OpcodeCondition.al
+	rn u8
+	p_bit bool
+	u_bit bool
+	w_bit bool
+	register_list []Register
+}
+
+pub fn (opcode LDMOpcode) as_hex() u32 {
+	opcode_part := u32(0x810_0000)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	rn_part := u32(opcode.rn) << 16
+	p_part := if opcode.p_bit { u32(0x100_0000) } else { u32(0) }
+	u_part := if opcode.u_bit { u32(0x80_0000) } else { u32(0) }
+	w_part := if opcode.w_bit { u32(0x20_0000) } else { u32(0) }
+	mut register_list_part := u32(0)
+	for elem in opcode.register_list {
+		register_list_part |= (1 << u32(elem))
+	}
+	return condition_part | p_part | u_part | w_part | rn_part | opcode_part | register_list_part
 }
