@@ -135,7 +135,7 @@ fn test_ldm_preindex() {
 		]
 	memory.set_values32(0, values)
 	mut cpu_state := CPUState {}
-	cpu_state.r[4] = 0x0 // Upper offset
+	cpu_state.r[4] = 0x0
 	
 	mut cpu := ARM7TDMI{
 		memory: memory
@@ -143,7 +143,7 @@ fn test_ldm_preindex() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba. LDMOpcode {
-		rn: 1
+		rn: 4
 		p_bit: true
 		u_bit: true
 		w_bit: false
@@ -155,5 +155,40 @@ fn test_ldm_preindex() {
 	assert result.r[0] == 0x2222_2222
 	assert result.r[1] == 0x3333_3333
 	assert result.r[2] == 0x4444_4444
+}
 
+/*
+Test LDM with writeback
+The test will load 2 registers in preindex
+At the end r4 should contain the final offset
+*/
+fn test_ldm_writeback() {
+	mut memory := mocks.MemoryFake {}
+	values := [
+		u32(0x1111_1111), 
+		0x2222_2222, 
+		0x3333_3333,
+		]
+	memory.set_values32(0, values)
+	mut cpu_state := CPUState {}
+	cpu_state.r[4] = 0x0
+	
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba. LDMOpcode {
+		rn: 4
+		p_bit: true
+		u_bit: true
+		w_bit: true
+		register_list: [.r7, .r5]
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[4] == 8
+	assert result.r[5] == 0x2222_2222
+	assert result.r[7] == 0x3333_3333
 }

@@ -235,6 +235,7 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	u_flag := (opcode & 0x80_0000) != 0
 	p_flag := (opcode & 0x100_0000) != 0
+	w_flag := (opcode & 0x20_0000) != 0
 
 	mut offset := self.r[rn]
 	for i in 0 .. 16 {
@@ -257,5 +258,8 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 				}
 			}
 		}
+	}
+	if w_flag {
+		self.r[rn] = offset
 	}
 }
