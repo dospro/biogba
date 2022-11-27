@@ -119,3 +119,41 @@ fn test_ldm_decrement() {
 	assert result.r[12] == 0x2222_2222
 	assert result.r[14] == 0x1111_1111
 }
+
+/*
+Test LDM with preindex
+The test will load 3 registers but the offset is incremented before fetching
+The first value in offset 0 is skipped
+*/
+fn test_ldm_preindex() {
+	mut memory := mocks.MemoryFake {}
+	values := [
+		u32(0x1111_1111), 
+		0x2222_2222, 
+		0x3333_3333,
+		0x4444_4444,
+		]
+	memory.set_values32(0, values)
+	mut cpu_state := CPUState {}
+	cpu_state.r[4] = 0x0 // Upper offset
+	
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba. LDMOpcode {
+		rn: 1
+		p_bit: true
+		u_bit: true
+		w_bit: false
+		register_list: [.r0, .r1, .r2]
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[0] == 0x2222_2222
+	assert result.r[1] == 0x3333_3333
+	assert result.r[2] == 0x4444_4444
+
+}

@@ -18,8 +18,8 @@ pub mut:
 
 pub struct ARM7TDMI {
 mut:
-	r    [16]u32
-	cpsr CPSR
+	r      [16]u32
+	cpsr   CPSR
 	memory MemoryInterface
 }
 
@@ -90,7 +90,9 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 						self.r[rd] = self.r[rn] & ~operand_value
 						self.r[rd]
 					}
-					else {0}
+					else {
+						0
+					}
 				}
 				self.cpsr.v = ((self.r[rn] ^ operand_value ^ result) & 0x8000_0000) != 0
 				self.cpsr.z = result == 0
@@ -125,15 +127,24 @@ Evaluate condition. Opcode should execute if the result is true
 fn (self ARM7TDMI) should_execute(condition OpcodeCondition) bool {
 	match true {
 		condition == .eq && !self.cpsr.z, condition == .ne && self.cpsr.z,
-		condition == .cs && !self.cpsr.c, condition == .cc && self.cpsr.c,
-		condition == .mi && !self.cpsr.n, condition == .pl && self.cpsr.n,
-		condition == .vs && !self.cpsr.v, condition == .vc && self.cpsr.v,
-		condition == .hi && !self.cpsr.c && self.cpsr.z,
-		condition == .ls && !(!self.cpsr.c || self.cpsr.z),
-		condition == .ge && self.cpsr.n != self.cpsr.v,
-		condition == .lt && self.cpsr.n == self.cpsr.v,
-		condition == .gt && !(!self.cpsr.z && self.cpsr.n == self.cpsr.v),
-		condition == .le && !(self.cpsr.z || self.cpsr.n != self.cpsr.v) {
+		condition == .cs
+			&& !self.cpsr.c, condition == .cc && self.cpsr.c,
+		condition == .mi
+			&& !self.cpsr.n, condition == .pl && self.cpsr.n,
+		condition == .vs
+			&& !self.cpsr.v, condition == .vc && self.cpsr.v,
+		condition == .hi
+			&& !self.cpsr.c && self.cpsr.z,
+		condition == .ls && !(!self.cpsr.c
+			|| self.cpsr.z),
+		condition == .ge
+			&& self.cpsr.n != self.cpsr.v,
+		condition == .lt
+			&& self.cpsr.n == self.cpsr.v,
+		condition == .gt && !(!self.cpsr.z
+			&& self.cpsr.n == self.cpsr.v),
+		condition == .le
+			&& !(self.cpsr.z || self.cpsr.n != self.cpsr.v) {
 			return false
 		}
 		else {
@@ -223,16 +234,27 @@ fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	u_flag := (opcode & 0x80_0000) != 0
+	p_flag := (opcode & 0x100_0000) != 0
+
 	mut offset := self.r[rn]
 	for i in 0 .. 16 {
 		if (opcode & (1 << i)) != 0 {
-			value := self.memory.read32(offset)
-			self.r[i] = value
-			println("r[${i}] = ${value:X} from ${offset:X}")
-			if u_flag {
-				offset += 4
+			if p_flag {
+				if u_flag {
+					offset += 4
+				} else {
+					offset -= 4
+				}
+				value := self.memory.read32(offset)
+				self.r[i] = value
 			} else {
-				offset -= 4
+				value := self.memory.read32(offset)
+				self.r[i] = value
+				if u_flag {
+					offset += 4
+				} else {
+					offset -= 4
+				}
 			}
 		}
 	}
