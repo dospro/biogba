@@ -20,6 +20,7 @@ pub struct ARM7TDMI {
 mut:
 	r    [16]u32
 	cpsr CPSR
+	memory MemoryInterface
 }
 
 pub fn (mut self ARM7TDMI) set_state(state CPUState) {
@@ -109,6 +110,8 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					self.r[14] = self.r[15] + 4
 				}
 				self.r[15] += target_address
+			} else { // LDM
+				self.ldm_opcode(opcode)
 			}
 		}
 		3 {}
@@ -215,4 +218,22 @@ fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 		self.cpsr.c = c_bit
 	}
 	return operand_value
+}
+
+fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
+	rn := (opcode >> 16) & 0xF
+	u_flag := (opcode & 0x80_0000) != 0
+	mut offset := self.r[rn]
+	for i in 0 .. 16 {
+		if (opcode & (1 << i)) != 0 {
+			value := self.memory.read32(offset)
+			self.r[i] = value
+			println("r[${i}] = ${value:X} from ${offset:X}")
+			if u_flag {
+				offset += 4
+			} else {
+				offset -= 4
+			}
+		}
+	}
 }
