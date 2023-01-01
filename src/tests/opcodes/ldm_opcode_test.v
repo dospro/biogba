@@ -38,6 +38,8 @@ fn test_ldm_single_register() {
 /*
 Test ldm with multiple registers
 The test will load a value to all pair registers
+Configuration
+- Post increment with no writeback
 */
 fn test_ldm_multiple_register() {
 	mut memory := mocks.MemoryFake {}
@@ -78,6 +80,8 @@ fn test_ldm_multiple_register() {
 Test LDM with decrement offsets
 The test will fill all even registers, but this time the offset will start
 from the top so it can decrement
+Configuration
+- Post Decrement with no writeback
 */
 fn test_ldm_decrement() {
 	mut memory := mocks.MemoryFake {}
@@ -161,6 +165,8 @@ fn test_ldm_preindex() {
 Test LDM with writeback
 The test will load 2 registers in preindex
 At the end r4 should contain the final offset
+Configuration
+- Pre increment with writeback
 */
 fn test_ldm_writeback() {
 	mut memory := mocks.MemoryFake {}

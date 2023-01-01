@@ -241,21 +241,13 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 	for i in 0 .. 16 {
 		if (opcode & (1 << i)) != 0 {
 			if p_flag {
-				if u_flag {
-					offset += 4
-				} else {
-					offset -= 4
-				}
+				offset += if u_flag {u32(4)} else {u32(-4)}
 				value := self.memory.read32(offset)
 				self.r[i] = value
 			} else {
 				value := self.memory.read32(offset)
 				self.r[i] = value
-				if u_flag {
-					offset += 4
-				} else {
-					offset -= 4
-				}
+				offset += if u_flag {u32(4)} else {u32(-4)}
 			}
 		}
 	}

@@ -254,3 +254,38 @@ pub fn (opcode LDMOpcode) as_hex() u32 {
 	}
 	return condition_part | p_part | u_part | w_part | rn_part | opcode_part | register_list_part
 }
+
+pub struct RegisterOffset {
+	rm u8
+	shift u8
+}
+
+pub fn (self RegisterOffset) as_hex() u32 {
+	return (u32(self.shift) << 4) | u32(self.rm)
+}
+
+pub struct LDROpcode {
+	condition OpcodeCondition = OpcodeCondition.al
+	rn u8
+	rd u8
+	p_bit bool
+	u_bit bool
+	w_bit bool
+	address u16 | RegisterOffset
+}
+
+
+pub fn (opcode LDROpcode) as_hex() u32 {
+	opcode_part := u32(0x0400_0000)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	rn_part := u32(opcode.rn) << 16
+	rd_part := u32(opcode.rd) << 12
+	p_part := if opcode.p_bit { u32(0x100_0000) } else { u32(0) }
+	u_part := if opcode.u_bit { u32(0x80_0000) } else { u32(0) }
+	w_part := if opcode.w_bit { u32(0x20_0000) } else { u32(0) }
+	address_part := match opcode.address {
+		u16 {u32(opcode.address)}
+		RegisterOffset {opcode.address.as_hex() | 0x200_0000}
+	}
+	return opcode_part | condition_part | rn_part | rd_part | p_part | u_part | w_part | address_part
+}

@@ -268,3 +268,49 @@ fn test_ldm() {
 	hex_value := opcode.as_hex()
 	assert hex_value == 0x09BE_800D
 }
+
+// LDR Load Register
+fn test_ldr_immediate_simple() {
+	opcode := biogba.LDROpcode{		
+		rn: 0xF
+		rd: 0x5
+		p_bit: false
+		u_bit: false
+		w_bit: false
+		address: u16(0x123)
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0xE40F_5123
+}
+
+fn test_ldr_immediate_flags() {
+	opcode := biogba.LDROpcode{
+		condition: OpcodeCondition.ne
+		rn: 0x1
+		rd: 0x2
+		p_bit: true
+		u_bit: false
+		w_bit: true
+		address: u16(0x321)
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0x1521_2321
+}
+
+fn test_ldr_register_address() {
+	opcode := biogba.LDROpcode{
+		condition: OpcodeCondition.ne
+		rn: 0x1
+		rd: 0x2
+		p_bit: true
+		u_bit: false
+		w_bit: true
+		address: biogba.RegisterOffset{
+			rm: 0x3
+			shift: 0x11
+		}
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0x1721_2113
+}
+
