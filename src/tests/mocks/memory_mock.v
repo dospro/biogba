@@ -2,7 +2,7 @@ module mocks
 
 pub struct MemoryFake {
 mut:
-	memory [100]u8 = [100]u8{}
+	memory [0x200]u8 = [0x200]u8{}
 }
 
 pub fn (mut self MemoryFake) set_value8(offset u32, value u8) {

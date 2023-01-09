@@ -99,7 +99,16 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				self.cpsr.n = (result & 0x8000_0000) != 0
 			}
 		}
-		1 {}
+		1 {
+			//LDR
+			rn := (opcode >> 16) & 0xF
+			rd := (opcode >> 12) & 0xF
+			u_bit := (opcode & 0x80_0000) != 0
+			address := if u_bit {self.r[rn] + (opcode & 0xFFF)} else {self.r[rn] - (opcode & 0xFFF)}
+			unalignment_shift := address & 3
+			value := self.memory.read32(address) >> (8 * unalignment_shift)
+			self.r[rd] = value
+		}
 		2 {
 			// B BL
 			if ((opcode >> 25) & 0xF) == 5 {
