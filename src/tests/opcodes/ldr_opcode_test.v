@@ -1,7 +1,6 @@
 import src.biogba
 import src.tests.mocks
 
-
 type CPUState = biogba.CPUState
 type ARM7TDMI = biogba.ARM7TDMI
 
@@ -272,7 +271,31 @@ In this test the address is misaligned by 2 so the operation
 should results in the following:
 rd = [address] >> 8x2
 */
-// fn test_ldr_immediate_unaligned_2() {}
+fn test_ldr_immediate_unaligned_2() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444])
+	mut cpu_state := CPUState{}
+	cpu_state.r[0] = 0 // Dest register
+	cpu_state.r[1] = 0x0
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 1
+		rd: 0
+		p_bit: true
+		u_bit: true
+		w_bit: false
+		address: u16(0x2) // Offset misaligned by 2
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[0] == 0x0000_2222
+}
 
 /*
 Test LDR Opcode with immediate address but not word aligned by 3.
@@ -281,9 +304,66 @@ In this test the address is misaligned by 3 so the operation
 should results in the following:
 rd = [address] >> 8x3
 */
-// fn test_ldr_immediate_unaligned_3() {}
+fn test_ldr_immediate_unaligned_3() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444])
+	mut cpu_state := CPUState{}
+	cpu_state.r[0] = 0 // Dest register
+	cpu_state.r[1] = 0x0
 
-// fn test_ldr_shift_lsl() {}
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 1
+		rd: 0
+		p_bit: true
+		u_bit: true
+		w_bit: false
+		address: u16(0x3) // Offset misaligned by 3
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[0] == 0x0000_0022
+}
+
+/*
+Test LDR Opcode in register mode
+
+The test will have I set indicating that the offset
+will be calculated based on a register and a shift value
+And the type of shift will be LSL
+*/
+// fn test_ldr_shift_lsl() {
+// 	mut memory := mocks.MemoryFake{}
+// 	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444])
+// 	mut cpu_state := CPUState{}
+// 	cpu_state.r[0] = 0 // Dest register
+// 	cpu_state.r[1] = 0x0 // Offset misaligned by 1
+
+// 	mut cpu := ARM7TDMI{
+// 		memory: memory
+// 	}
+// 	cpu.set_state(cpu_state)
+
+// 	opcode := biogba.LDROpcode{
+// 		rn: 1
+// 		rd: 0
+// 		p_bit: true
+// 		u_bit: true
+// 		w_bit: false
+// 		address: biogba.RegisterOffset{
+
+// 		}
+// 	}
+// 	cpu.execute_opcode(opcode.as_hex())
+// 	result := cpu.get_state()
+
+// 	assert result.r[0] == 0x0000_0022
+// }
 // fn test_ldr_shift_lsr() {}
 // fn test_ldr_shift_asr() {}
 // fn test_ldr_shift_ror() {}

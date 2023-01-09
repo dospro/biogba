@@ -11,18 +11,18 @@ Tests a simple case where we load the value 0x1234_1234 from memory
 into register 0
 */
 fn test_ldm_single_register() {
-	mut memory := mocks.MemoryFake {}
+	mut memory := mocks.MemoryFake{}
 	memory.set_values32(0, [u32(0x1234_4321)])
-	mut cpu_state := CPUState {}
+	mut cpu_state := CPUState{}
 	cpu_state.r[0] = 0 // Dest register
 	cpu_state.r[1] = 0 // Offset
-	
+
 	mut cpu := ARM7TDMI{
 		memory: memory
 	}
 	cpu.set_state(cpu_state)
 
-	opcode := biogba. LDMOpcode {
+	opcode := biogba.LDMOpcode{
 		rn: 1
 		p_bit: false
 		u_bit: true
@@ -42,26 +42,26 @@ Configuration
 - Post increment with no writeback
 */
 fn test_ldm_multiple_register() {
-	mut memory := mocks.MemoryFake {}
+	mut memory := mocks.MemoryFake{}
 	values := [
-		u32(0x1111_1111), 
-		0x2222_2222, 
+		u32(0x1111_1111),
+		0x2222_2222,
 		0x3333_3333,
 		0x4444_4444,
 		0x5555_5555,
 		0x6666_6666,
 		0x7777_7777,
 		0x8888_8888,
-		]
+	]
 	memory.set_values32(0, values)
-	mut cpu_state := CPUState {}
-	
+	mut cpu_state := CPUState{}
+
 	mut cpu := ARM7TDMI{
 		memory: memory
 	}
 	cpu.set_state(cpu_state)
 
-	opcode := biogba. LDMOpcode {
+	opcode := biogba.LDMOpcode{
 		rn: 1
 		p_bit: false
 		u_bit: true
@@ -84,27 +84,27 @@ Configuration
 - Post Decrement with no writeback
 */
 fn test_ldm_decrement() {
-	mut memory := mocks.MemoryFake {}
+	mut memory := mocks.MemoryFake{}
 	values := [
-		u32(0x1111_1111), 
-		0x2222_2222, 
+		u32(0x1111_1111),
+		0x2222_2222,
 		0x3333_3333,
 		0x4444_4444,
 		0x5555_5555,
 		0x6666_6666,
 		0x7777_7777,
 		0x8888_8888,
-		]
+	]
 	memory.set_values32(0, values)
-	mut cpu_state := CPUState {}
+	mut cpu_state := CPUState{}
 	cpu_state.r[1] = 0x1C // Upper offset
-	
+
 	mut cpu := ARM7TDMI{
 		memory: memory
 	}
 	cpu.set_state(cpu_state)
 
-	opcode := biogba. LDMOpcode {
+	opcode := biogba.LDMOpcode{
 		rn: 1
 		p_bit: false
 		u_bit: false
@@ -130,23 +130,23 @@ The test will load 3 registers but the offset is incremented before fetching
 The first value in offset 0 is skipped
 */
 fn test_ldm_preindex() {
-	mut memory := mocks.MemoryFake {}
+	mut memory := mocks.MemoryFake{}
 	values := [
-		u32(0x1111_1111), 
-		0x2222_2222, 
+		u32(0x1111_1111),
+		0x2222_2222,
 		0x3333_3333,
 		0x4444_4444,
-		]
+	]
 	memory.set_values32(0, values)
-	mut cpu_state := CPUState {}
+	mut cpu_state := CPUState{}
 	cpu_state.r[4] = 0x0
-	
+
 	mut cpu := ARM7TDMI{
 		memory: memory
 	}
 	cpu.set_state(cpu_state)
 
-	opcode := biogba. LDMOpcode {
+	opcode := biogba.LDMOpcode{
 		rn: 4
 		p_bit: true
 		u_bit: true
@@ -169,22 +169,22 @@ Configuration
 - Pre increment with writeback
 */
 fn test_ldm_writeback() {
-	mut memory := mocks.MemoryFake {}
+	mut memory := mocks.MemoryFake{}
 	values := [
-		u32(0x1111_1111), 
-		0x2222_2222, 
+		u32(0x1111_1111),
+		0x2222_2222,
 		0x3333_3333,
-		]
+	]
 	memory.set_values32(0, values)
-	mut cpu_state := CPUState {}
+	mut cpu_state := CPUState{}
 	cpu_state.r[4] = 0x0
-	
+
 	mut cpu := ARM7TDMI{
 		memory: memory
 	}
 	cpu.set_state(cpu_state)
 
-	opcode := biogba. LDMOpcode {
+	opcode := biogba.LDMOpcode{
 		rn: 4
 		p_bit: true
 		u_bit: true

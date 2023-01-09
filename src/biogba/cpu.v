@@ -100,32 +100,8 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 			}
 		}
 		1 {
-			//LDR
-			rn := (opcode >> 16) & 0xF
-			rd := (opcode >> 12) & 0xF
-			p_bit := (opcode & 0x100_0000) != 0
-			u_bit := (opcode & 0x80_0000) != 0
-			w_bit := (opcode & 0x20_0000) != 0
-			mut address := self.r[rn]
-			offset := if u_bit {(opcode & 0xFFF)} else {-(opcode & 0xFFF)} 
-			
-			if p_bit {
-				address += offset
-			}
-
-			unalignment_shift := address & 3
-			value := self.memory.read32(address) >> (8 * unalignment_shift)
-			self.r[rd] = value
-
-			if !p_bit {
-				// Post index. Writeback is always enabled
-				self.r[rn] = address + offset
-			} else {
-				// Preindex. Writeback is optional
-				if w_bit {
-					self.r[rn] = address
-				}
-			}
+			// LDR
+			self.ldr_opcode(opcode)
 		}
 		2 {
 			// B BL
@@ -268,17 +244,45 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 	for i in 0 .. 16 {
 		if (opcode & (1 << i)) != 0 {
 			if p_flag {
-				offset += if u_flag {u32(4)} else {u32(-4)}
+				offset += if u_flag { u32(4) } else { u32(-4) }
 				value := self.memory.read32(offset)
 				self.r[i] = value
 			} else {
 				value := self.memory.read32(offset)
 				self.r[i] = value
-				offset += if u_flag {u32(4)} else {u32(-4)}
+				offset += if u_flag { u32(4) } else { u32(-4) }
 			}
 		}
 	}
 	if w_flag {
 		self.r[rn] = offset
+	}
+}
+
+fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
+	rn := (opcode >> 16) & 0xF
+	rd := (opcode >> 12) & 0xF
+	p_bit := (opcode & 0x100_0000) != 0
+	u_bit := (opcode & 0x80_0000) != 0
+	w_bit := (opcode & 0x20_0000) != 0
+	mut address := self.r[rn]
+	offset := if u_bit { (opcode & 0xFFF) } else { -(opcode & 0xFFF) }
+
+	if p_bit {
+		address += offset
+	}
+
+	unalignment_shift := address & 3
+	value := self.memory.read32(address) >> (8 * unalignment_shift)
+	self.r[rd] = value
+
+	if !p_bit {
+		// Post index. Writeback is always enabled
+		self.r[rn] = address + offset
+	} else {
+		// Preindex. Writeback is optional
+		if w_bit {
+			self.r[rn] = address
+		}
 	}
 }
