@@ -57,7 +57,7 @@ fn test_ldr_immediate() {
 	opcode := biogba.LDROpcode{
 		rn: 14
 		rd: 0
-		p_bit: false
+		p_bit: true
 		u_bit: true
 		w_bit: false
 		address: u16(0x50)
@@ -69,7 +69,7 @@ fn test_ldr_immediate() {
 }
 
 /*
-Test LDR Opcode with decrement bit set
+Test LDR Opcode with decrement bit unset
 
 The test sets a value in address 0x90
 then it will use the base register rn = 0x100
@@ -91,7 +91,7 @@ fn test_ldr_immediate_decrement() {
 	opcode := biogba.LDROpcode{
 		rn: 10
 		rd: 2
-		p_bit: false
+		p_bit: true
 		u_bit: false
 		w_bit: false
 		address: u16(0x70)
@@ -102,11 +102,135 @@ fn test_ldr_immediate_decrement() {
 	assert result.r[2] == 0xFFFF_1010
 }
 
-// fn test_ldr_immediate_preindex() {}
-// fn test_ldr_immediate_postindex() {}
-// fn test_ldr_immediate_preindex() {}
-// fn test_ldr_immediate_preindex() {}
-// fn test_ldr_immediate_preindex() {}
+/*
+Test LDR Opcode with preindex bit unset (post-index)
+
+In this test the addition is done after loading the value
+so the real address is what we have in rd only
+*/
+fn test_ldr_immediate_postindex() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x10, [u32(0xFFFF_1010)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[2] = 0 // Dest register
+	cpu_state.r[3] = 0x10 // Offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 3
+		rd: 2
+		p_bit: false
+		u_bit: true
+		w_bit: false
+		address: u16(0x10)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[2] == 0xFFFF_1010
+}
+
+/*
+Test LDR Opcode in preindex without writeback
+
+In preindex mode write back can be enable or diabled.
+The test verifies that rn is not updated after the opcode
+*/
+fn test_ldr_immediate_preindex_no_writeback() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x20, [u32(0xFFFF_1010)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[2] = 0 // Dest register
+	cpu_state.r[3] = 0x10 // Offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 3
+		rd: 2
+		p_bit: true
+		u_bit: true
+		w_bit: false
+		address: u16(0x10)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[2] == 0xFFFF_1010
+	assert result.r[3] == 0x10
+}
+
+/*
+Test LDR Opcode in preindex mode with writeback
+
+In this case Rn should contain the last address used rn+offset
+*/
+fn test_ldr_immediate_preindex_with_writeback() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x20, [u32(0xFFFF_1010)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[2] = 0 // Dest register
+	cpu_state.r[3] = 0x10 // Offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 3
+		rd: 2
+		p_bit: true
+		u_bit: true
+		w_bit: true
+		address: u16(0x10)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[2] == 0xFFFF_1010
+	assert result.r[3] == 0x20
+}
+
+/*
+Test LDR Opcode in postindex mode with writeback disabled
+
+When using postindex, writeback is always executed
+and w should be unset. Setting w will produce other behaviors
+*/
+fn test_ldr_immediate_postindex_writeback() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x10, [u32(0xFFFF_1010)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[2] = 0 // Dest register
+	cpu_state.r[3] = 0x10 // Offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 3
+		rd: 2
+		p_bit: false
+		u_bit: true
+		w_bit: false
+		address: u16(0x10)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[2] == 0xFFFF_1010
+	assert result.r[3] == 0x20
+}
 
 /*
 Test LDR Opcode with immediate address but not word aligned.

@@ -103,11 +103,29 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 			//LDR
 			rn := (opcode >> 16) & 0xF
 			rd := (opcode >> 12) & 0xF
+			p_bit := (opcode & 0x100_0000) != 0
 			u_bit := (opcode & 0x80_0000) != 0
-			address := if u_bit {self.r[rn] + (opcode & 0xFFF)} else {self.r[rn] - (opcode & 0xFFF)}
+			w_bit := (opcode & 0x20_0000) != 0
+			mut address := self.r[rn]
+			offset := if u_bit {(opcode & 0xFFF)} else {-(opcode & 0xFFF)} 
+			
+			if p_bit {
+				address += offset
+			}
+
 			unalignment_shift := address & 3
 			value := self.memory.read32(address) >> (8 * unalignment_shift)
 			self.r[rd] = value
+
+			if !p_bit {
+				// Post index. Writeback is always enabled
+				self.r[rn] = address + offset
+			} else {
+				// Preindex. Writeback is optional
+				if w_bit {
+					self.r[rn] = address
+				}
+			}
 		}
 		2 {
 			// B BL
