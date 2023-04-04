@@ -257,11 +257,12 @@ pub fn (opcode LDMOpcode) as_hex() u32 {
 
 pub struct RegisterOffset {
 	rm u8
-	shift u8
+	shift_type ShiftType
+	shift_value u8
 }
 
 pub fn (self RegisterOffset) as_hex() u32 {
-	return (u32(self.shift) << 4) | u32(self.rm)
+	return (u32(self.shift_value) << 7) | (u32(self.shift_type) << 5 ) | u32(self.rm)
 }
 
 pub struct LDROpcode {

@@ -297,7 +297,7 @@ fn test_ldr_immediate_flags() {
 	assert hex_value == 0x1521_2321
 }
 
-fn test_ldr_register_address() {
+fn test_ldr_register_address_lsl() {
 	opcode := biogba.LDROpcode{
 		condition: OpcodeCondition.ne
 		rn: 0x1
@@ -307,10 +307,29 @@ fn test_ldr_register_address() {
 		w_bit: true
 		address: biogba.RegisterOffset{
 			rm: 0x3
-			shift: 0x11
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 0x11
 		}
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0x1721_2113
+	assert hex_value == 0x1721_2883
+}
+
+fn test_ldr_register_address_lsr() {
+	opcode := biogba.LDROpcode{
+		condition: OpcodeCondition.ne
+		rn: 0x1
+		rd: 0x2
+		p_bit: true
+		u_bit: false
+		w_bit: true
+		address: biogba.RegisterOffset{
+			rm: 0x3
+			shift_type: biogba.ShiftType.lsr
+			shift_value: 0x11
+		}
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0x1721_28A3
 }
 
