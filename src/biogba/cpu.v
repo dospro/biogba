@@ -156,7 +156,7 @@ fn (self ARM7TDMI) should_execute(condition OpcodeCondition) bool {
 	}
 }
 
-fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
+pub fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 	is_register_shift := ((opcode >> 25) & 1) == 0
 	s_bit := ((opcode >> 20) & 1) != 0
 	mut operand_value := u32(0)
@@ -262,11 +262,34 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	rd := (opcode >> 12) & 0xF
+	i_bit := (opcode & 0x200_0000) != 0
 	p_bit := (opcode & 0x100_0000) != 0
 	u_bit := (opcode & 0x80_0000) != 0
 	w_bit := (opcode & 0x20_0000) != 0
 	mut address := self.r[rn]
-	offset := if u_bit { (opcode & 0xFFF) } else { -(opcode & 0xFFF) }
+	mut offset := u32(0)
+	if i_bit {
+		rm := self.r[opcode & 0xF]
+		shift_value := (opcode >> 7) & 0x1F
+		shift_type := shift_type_from_value((opcode >> 5) & 3) or {panic('')}
+		real_offset := match shift_type {
+			.lsl {rm << shift_value}
+			.lsr {rm >> shift_value}
+			.asr {
+					bit := rm & 0x8000_0000
+					mut final_offset := rm
+					for _ in 0 .. shift_value {
+						final_offset >>= 1
+						final_offset |= bit
+					}
+					final_offset
+				}
+			else {0}
+		} 
+		offset = if u_bit { real_offset } else { -(real_offset) }
+	} else {
+		offset = if u_bit { (opcode & 0xFFF) } else { -(opcode & 0xFFF) }
+	}
 
 	if p_bit {
 		address += offset

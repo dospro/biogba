@@ -331,41 +331,122 @@ fn test_ldr_immediate_unaligned_3() {
 }
 
 /*
-Test LDR Opcode in register mode
+Test LDR Opcode in register mode with LSL shift
 
 The test will have I set indicating that the offset
 will be calculated based on a register and a shift value
 And the type of shift will be LSL
+
+First we specify R2 with value and in the shift operand 
+we specify a LSL with a shift of 4 which will produce
+an offset of 0x10 which is where the expected value is.
 */
-// fn test_ldr_shift_lsl() {
-// 	mut memory := mocks.MemoryFake{}
-// 	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444])
-// 	mut cpu_state := CPUState{}
-// 	cpu_state.r[0] = 0 // Dest register
-// 	cpu_state.r[1] = 0x0 // Offset misaligned by 1
+fn test_ldr_register_lsl() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x10, [u32(0x1234_4321)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[0] = 0x0 // Dest register
+	cpu_state.r[1] = 0x0 // Base register
+	cpu_state.r[2] = 0x1 // Register offset
 
-// 	mut cpu := ARM7TDMI{
-// 		memory: memory
-// 	}
-// 	cpu.set_state(cpu_state)
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
 
-// 	opcode := biogba.LDROpcode{
-// 		rn: 1
-// 		rd: 0
-// 		p_bit: true
-// 		u_bit: true
-// 		w_bit: false
-// 		address: biogba.RegisterOffset{
+	opcode := biogba.LDROpcode{
+		rn: 1
+		rd: 0
+		p_bit: true
+		u_bit: true
+		w_bit: false
+		address: biogba.RegisterOffset{
+			rm: 0x2
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 4
+		}
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
 
-// 		}
-// 	}
-// 	cpu.execute_opcode(opcode.as_hex())
-// 	result := cpu.get_state()
+	assert result.r[0] == 0x1234_4321
+}
 
-// 	assert result.r[0] == 0x0000_0022
-// }
-// fn test_ldr_shift_lsr() {}
-// fn test_ldr_shift_asr() {}
+/*
+Test LDR Opcode in register mode with LSR shift
+
+First we specify R2 with value and in the shift operand 
+we specify a LSR with a shift of 1 which will produce
+an offset of 0x10 which is where the expected value is.
+*/
+fn test_ldr_register_lsr() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x10, [u32(0x1234_4321)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[0] = 0x0 // Dest register
+	cpu_state.r[1] = 0x0 // Base register
+	cpu_state.r[2] = 0x20 // Register offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 1
+		rd: 0
+		p_bit: true
+		u_bit: true
+		w_bit: false
+		address: biogba.RegisterOffset{
+			rm: 0x2
+			shift_type: biogba.ShiftType.lsr
+			shift_value: 1
+		}
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[0] == 0x1234_4321
+}
+
+/*
+Test LDR Opcode in register mode with ASR shift
+
+First we specify R2 with value and in the shift operand 
+we specify a ASR with a shift of 1 which will produce
+an offset of 0x10 which is where the expected value is.
+*/
+fn test_ldr_register_asr() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x100, [u32(0x1234_4321)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[0] = 0x0 // Dest register
+	cpu_state.r[1] = 0x200 // Base register
+	cpu_state.r[2] = 0xFFFF_0000 // Register offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 1
+		rd: 0
+		p_bit: true
+		u_bit: true
+		w_bit: false
+		address: biogba.RegisterOffset{
+			rm: 0x2
+			shift_type: biogba.ShiftType.asr
+			shift_value: 8
+		}
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[0] == 0x1234_4321
+}
 // fn test_ldr_shift_ror() {}
 // fn test_ldr_shift_lsr32() {}
 // fn test_ldr_shift_asr32() {}
