@@ -447,7 +447,43 @@ fn test_ldr_register_asr() {
 
 	assert result.r[0] == 0x1234_4321
 }
-// fn test_ldr_shift_ror() {}
-// fn test_ldr_shift_lsr32() {}
-// fn test_ldr_shift_asr32() {}
-// fn test_ldr_shift_rxx() {}
+
+/*
+Test LDR Opcode in register mode with ROR shift
+
+In this test we start with R2 containing a value of 
+0x0000_FFFF which will be rotated right 8 bits to produce
+a value of 0xFF00_00FF which will then be subtracted to 
+the base R1 which is preloaded with a value of 0xFF00_01FF
+producing an address of 0x100 where the actual value is.
+*/
+fn test_ldr_register_ror() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x100, [u32(0x1234_4321)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[0] = 0x0 // Dest register
+	cpu_state.r[1] = 0xFF00_01FF // Base register
+	cpu_state.r[2] = 0x0000_FFFF // Register offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 1
+		rd: 0
+		p_bit: true
+		u_bit: false
+		w_bit: false
+		address: biogba.RegisterOffset{
+			rm: 0x2
+			shift_type: biogba.ShiftType.ror
+			shift_value: 8
+		}
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[0] == 0x1234_4321
+}

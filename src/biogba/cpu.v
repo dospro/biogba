@@ -283,8 +283,16 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 						final_offset |= bit
 					}
 					final_offset
+			}
+			.ror {
+				mut final_offset := rm
+				for _ in 0 .. shift_value {
+					bit := final_offset & 1
+					final_offset >>= 1
+					final_offset |= (bit << 31)
 				}
-			else {0}
+				final_offset
+			}
 		} 
 		offset = if u_bit { real_offset } else { -(real_offset) }
 	} else {
