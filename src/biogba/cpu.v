@@ -1,5 +1,7 @@
 module biogba
 
+import math.bits {rotate_left_32}
+
 pub struct CPSR {
 pub mut:
 	c bool
@@ -18,8 +20,9 @@ pub mut:
 
 pub struct ARM7TDMI {
 mut:
-	r      [16]u32
-	cpsr   CPSR
+	r    [16]u32
+	cpsr CPSR
+pub mut:
 	memory MemoryInterface
 }
 
@@ -265,24 +268,29 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 	i_bit := (opcode & 0x200_0000) != 0
 	p_bit := (opcode & 0x100_0000) != 0
 	u_bit := (opcode & 0x80_0000) != 0
+	b_bit := (opcode & 0x40_0000) != 0
 	w_bit := (opcode & 0x20_0000) != 0
 	mut address := self.r[rn]
 	mut offset := u32(0)
 	if i_bit {
 		rm := self.r[opcode & 0xF]
 		shift_value := (opcode >> 7) & 0x1F
-		shift_type := shift_type_from_value((opcode >> 5) & 3) or {panic('')}
+		shift_type := shift_type_from_value((opcode >> 5) & 3) or { panic('') }
 		real_offset := match shift_type {
-			.lsl {rm << shift_value}
-			.lsr {rm >> shift_value}
+			.lsl {
+				rm << shift_value
+			}
+			.lsr {
+				rm >> shift_value
+			}
 			.asr {
-					bit := rm & 0x8000_0000
-					mut final_offset := rm
-					for _ in 0 .. shift_value {
-						final_offset >>= 1
-						final_offset |= bit
-					}
-					final_offset
+				bit := rm & 0x8000_0000
+				mut final_offset := rm
+				for _ in 0 .. shift_value {
+					final_offset >>= 1
+					final_offset |= bit
+				}
+				final_offset
 			}
 			.ror {
 				mut final_offset := rm
@@ -293,8 +301,8 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 				}
 				final_offset
 			}
-		} 
-		offset = if u_bit { real_offset } else { -(real_offset) }
+		}
+		offset = if u_bit { real_offset } else { -real_offset }
 	} else {
 		offset = if u_bit { (opcode & 0xFFF) } else { -(opcode & 0xFFF) }
 	}
@@ -303,9 +311,14 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 		address += offset
 	}
 
-	unalignment_shift := address & 3
-	value := self.memory.read32(address) >> (8 * unalignment_shift)
-	self.r[rd] = value
+	if b_bit {
+		self.r[rd] = self.memory.read8(address)
+	} else {
+		unalignment_shift := (address & 3) << 3 
+		mut value := self.memory.read32(address & 0xFFFF_FFFC) // truncate to word aligned
+		value = rotate_left_32(value, -int(unalignment_shift))
+		self.r[rd] = value
+	}
 
 	if !p_bit {
 		// Post index. Writeback is always enabled

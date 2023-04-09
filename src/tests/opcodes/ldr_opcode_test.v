@@ -27,6 +27,7 @@ fn test_ldr_simple_case() {
 		rd: 0
 		p_bit: false
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: u16(0)
 	}
@@ -58,6 +59,7 @@ fn test_ldr_immediate() {
 		rd: 0
 		p_bit: true
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: u16(0x50)
 	}
@@ -92,6 +94,7 @@ fn test_ldr_immediate_decrement() {
 		rd: 2
 		p_bit: true
 		u_bit: false
+		b_bit: false
 		w_bit: false
 		address: u16(0x70)
 	}
@@ -124,6 +127,7 @@ fn test_ldr_immediate_postindex() {
 		rd: 2
 		p_bit: false
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: u16(0x10)
 	}
@@ -156,6 +160,7 @@ fn test_ldr_immediate_preindex_no_writeback() {
 		rd: 2
 		p_bit: true
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: u16(0x10)
 	}
@@ -188,6 +193,7 @@ fn test_ldr_immediate_preindex_with_writeback() {
 		rd: 2
 		p_bit: true
 		u_bit: true
+		b_bit: false
 		w_bit: true
 		address: u16(0x10)
 	}
@@ -221,6 +227,7 @@ fn test_ldr_immediate_postindex_writeback() {
 		rd: 2
 		p_bit: false
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: u16(0x10)
 	}
@@ -255,13 +262,14 @@ fn test_ldr_immediate_unaligned_1() {
 		rd: 0
 		p_bit: false
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: u16(0x0)
 	}
 	cpu.execute_opcode(opcode.as_hex())
 	result := cpu.get_state()
 
-	assert result.r[0] == 0x0011_2222
+	assert result.r[0] == 0x2211_1122
 }
 
 /*
@@ -288,13 +296,14 @@ fn test_ldr_immediate_unaligned_2() {
 		rd: 0
 		p_bit: true
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: u16(0x2) // Offset misaligned by 2
 	}
 	cpu.execute_opcode(opcode.as_hex())
 	result := cpu.get_state()
 
-	assert result.r[0] == 0x0000_2222
+	assert result.r[0] == 0x2222_1111 // Need to confirm the result
 }
 
 /*
@@ -321,13 +330,14 @@ fn test_ldr_immediate_unaligned_3() {
 		rd: 0
 		p_bit: true
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: u16(0x3) // Offset misaligned by 3
 	}
 	cpu.execute_opcode(opcode.as_hex())
 	result := cpu.get_state()
 
-	assert result.r[0] == 0x0000_0022
+	assert result.r[0] == 0x1122_2211
 }
 
 /*
@@ -337,7 +347,7 @@ The test will have I set indicating that the offset
 will be calculated based on a register and a shift value
 And the type of shift will be LSL
 
-First we specify R2 with value and in the shift operand 
+First we specify R2 with value and in the shift operand
 we specify a LSL with a shift of 4 which will produce
 an offset of 0x10 which is where the expected value is.
 */
@@ -359,6 +369,7 @@ fn test_ldr_register_lsl() {
 		rd: 0
 		p_bit: true
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: biogba.RegisterOffset{
 			rm: 0x2
@@ -375,7 +386,7 @@ fn test_ldr_register_lsl() {
 /*
 Test LDR Opcode in register mode with LSR shift
 
-First we specify R2 with value and in the shift operand 
+First we specify R2 with value and in the shift operand
 we specify a LSR with a shift of 1 which will produce
 an offset of 0x10 which is where the expected value is.
 */
@@ -397,6 +408,7 @@ fn test_ldr_register_lsr() {
 		rd: 0
 		p_bit: true
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: biogba.RegisterOffset{
 			rm: 0x2
@@ -413,7 +425,7 @@ fn test_ldr_register_lsr() {
 /*
 Test LDR Opcode in register mode with ASR shift
 
-First we specify R2 with value and in the shift operand 
+First we specify R2 with value and in the shift operand
 we specify a ASR with a shift of 1 which will produce
 an offset of 0x10 which is where the expected value is.
 */
@@ -435,6 +447,7 @@ fn test_ldr_register_asr() {
 		rd: 0
 		p_bit: true
 		u_bit: true
+		b_bit: false
 		w_bit: false
 		address: biogba.RegisterOffset{
 			rm: 0x2
@@ -451,9 +464,9 @@ fn test_ldr_register_asr() {
 /*
 Test LDR Opcode in register mode with ROR shift
 
-In this test we start with R2 containing a value of 
+In this test we start with R2 containing a value of
 0x0000_FFFF which will be rotated right 8 bits to produce
-a value of 0xFF00_00FF which will then be subtracted to 
+a value of 0xFF00_00FF which will then be subtracted to
 the base R1 which is preloaded with a value of 0xFF00_01FF
 producing an address of 0x100 where the actual value is.
 */
@@ -475,6 +488,7 @@ fn test_ldr_register_ror() {
 		rd: 0
 		p_bit: true
 		u_bit: false
+		b_bit: false
 		w_bit: false
 		address: biogba.RegisterOffset{
 			rm: 0x2
@@ -486,4 +500,39 @@ fn test_ldr_register_ror() {
 	result := cpu.get_state()
 
 	assert result.r[0] == 0x1234_4321
+}
+
+/*
+Test LDRB opcode which is LDR but with B bit set
+
+El test comienzo con 4 bytes en memoria empezando en la
+dirección 0x1234_4321. Usando el modo inmediato, buscamos
+leer directamente la dirección 0x100 para obtener el byte
+0x12
+*/
+fn test_ldr_byte() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x100, [u32(0x1234_4321)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[0] = 0x0 // Dest register
+	cpu_state.r[1] = 0xB0 // Base register
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDROpcode{
+		rn: 1
+		rd: 0
+		p_bit: true
+		u_bit: true
+		b_bit: true
+		w_bit: false
+		address: u16(0x50)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[0] == 0x21
 }

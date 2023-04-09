@@ -271,6 +271,7 @@ pub struct LDROpcode {
 	rd u8
 	p_bit bool
 	u_bit bool
+	b_bit bool
 	w_bit bool
 	address u16 | RegisterOffset
 }
@@ -283,10 +284,11 @@ pub fn (opcode LDROpcode) as_hex() u32 {
 	rd_part := u32(opcode.rd) << 12
 	p_part := if opcode.p_bit { u32(0x100_0000) } else { u32(0) }
 	u_part := if opcode.u_bit { u32(0x80_0000) } else { u32(0) }
+	b_part := if opcode.b_bit { u32(0x40_0000) } else { u32(0) }
 	w_part := if opcode.w_bit { u32(0x20_0000) } else { u32(0) }
 	address_part := match opcode.address {
 		u16 {u32(opcode.address)}
 		RegisterOffset {opcode.address.as_hex() | 0x200_0000}
 	}
-	return opcode_part | condition_part | rn_part | rd_part | p_part | u_part | w_part | address_part
+	return opcode_part | condition_part | rn_part | rd_part | p_part | u_part | b_part | w_part | address_part
 }

@@ -333,3 +333,17 @@ fn test_ldr_register_address_lsr() {
 	assert hex_value == 0x1721_28A3
 }
 
+fn test_ldr_byte() {
+	opcode := biogba.LDROpcode{
+		condition: OpcodeCondition.ne
+		rn: 0x1
+		rd: 0x2
+		p_bit: true
+		u_bit: true
+		b_bit: true
+		w_bit: false
+		address: u16(0x11)
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0x15C1_2011
+}
