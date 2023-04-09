@@ -19,15 +19,7 @@ pub fn (mut self MemoryFake) set_values32(offset u32, values []u32) {
 }
 
 pub fn (mut self MemoryFake) set_values_32_le(offset u32, values []u32) {
-	// for i in 0 .. values.len {
-	// 	self.memory[offset] = u8(values[i] & 0xFF)
-	// 	self.memory[offset + 1] = u8((values[i] >> 8) & 0xFF)
-	// 	self.memory[offset + 2] = u8((values[i] >> 16) & 0xFF)
-	// 	self.memory[offset + 3] = u8((values[i] >> 24) & 0xFF)
-	// 	println("Writing value ${values[i]:X} at ${offset:X} which is stored as ${self.memory[offset..4].hex()}")
-	// }
 	for i in 0 .. values.len {
-		// println("Writing value ${values[i]:X} at ${int(offset + (i * 4)):X}")
 		little_endian_put_u32_at(mut &self.memory, values[i], int(offset + (i * 4)))
 	}
 }
@@ -47,9 +39,5 @@ pub fn (self MemoryFake) read8(offset u32) u8 {
 }
 
 pub fn (self MemoryFake) read32(offset u32) u32 {
-	// return (u32(self.memory[offset + 3]) << 24) | 
-	// (u32(self.memory[offset + 2]) << 16) | 
-	// (u32(self.memory[offset + 1]) << 8) | 
-	// u32(self.memory[offset])
 	return little_endian_u32_at(self.memory, int(offset))
 }
