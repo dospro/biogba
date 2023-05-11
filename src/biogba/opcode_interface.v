@@ -112,12 +112,17 @@ fn (self ShiftOperand) as_hex() u32 {
 	}
 }
 
+pub interface Opcode {
+	as_hex() u32
+}
+
 pub struct ArithmeticOpcode {
-	condition     OpcodeCondition = OpcodeCondition.al
-	shift_operand ShiftOperand    = ShiftOperandImmediate{}
-	rn            u8
-	rd            u8
-	s_bit         bool
+	pub:
+		condition     OpcodeCondition = OpcodeCondition.al
+		shift_operand ShiftOperand    = ShiftOperandImmediate{}
+		rn            u8
+		rd            u8
+		s_bit         bool
 }
 
 pub fn (opcode ArithmeticOpcode) get_opcode_part() u32 {
