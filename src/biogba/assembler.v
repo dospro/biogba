@@ -29,23 +29,23 @@ Example
 R15 -> 0xF
 */
 fn register_number_from_string(register_string string) !u8 {
-	return match register_string {
-		'R0' {0x0}
-		'R1' {0x1}
-		'R2' {0x2}
-		'R3' {0x3}
-		'R4' {0x4}
-		'R5' {0x5}
-		'R6' {0x6}
-		'R7' {0x7}
-		'R8' {0x8}
-		'R9' {0x9}
-		'R10' {0xA}
-		'R11' {0xB}
-		'R12' {0xC}
-		'R13' {0xD}
-		'R14' {0xE}
-		'R15' {0xF}
+	return match register_string.to_lower() {
+		'r0' {0x0}
+		'r1' {0x1}
+		'r2' {0x2}
+		'r3' {0x3}
+		'r4' {0x4}
+		'r5' {0x5}
+		'r6' {0x6}
+		'r7' {0x7}
+		'r8' {0x8}
+		'r9' {0x9}
+		'r10' {0xA}
+		'r11' {0xB}
+		'r12' {0xC}
+		'r13' {0xD}
+		'r14' {0xE}
+		'r15' {0xF}
 		else {
 			error("Invalid register ${register_string}")
 		}
@@ -55,8 +55,14 @@ fn register_number_from_string(register_string string) !u8 {
 
 fn opcode_from_string(opcode_text string) !Opcode {
 
+	// Remove commas
 	cleaned_opcode_text := opcode_text.replace(',', ' ')
-	mut scanner := textscanner.new(cleaned_opcode_text)
+
+	// Separate tokens
+	tokens := cleaned_opcode_text.fields()
+
+	// Parse first token
+	mut scanner := textscanner.new(tokens[0])
 	mut token := ''
 	mut state := 0
 
@@ -76,53 +82,38 @@ fn opcode_from_string(opcode_text string) !Opcode {
 
 	for {
 		next_character := utf32_to_str(u32(scanner.peek()))
-		println('Next character : ${next_character}')
-		match next_character {
-			' ', ',', '\n', '\r', '\t' {scanner.skip()}
-			else {
-				if next_state := opcode_name_transitions[state][next_character] {
-					state = next_state
-					token += next_character
-					scanner.skip()
-				} else {
-					println('Invalid character ${next_character}')
-					break
-				}
-			}
-		}
-		match state {
-			3, 4, 5 {
-				break
-			} else {
-				continue
-			}
+		if next_state := opcode_name_transitions[state][next_character] {
+			state = next_state
+			token += next_character
+			scanner.skip()
+		} else {
+			println('Invalid character ${next_character}')
+			break
 		}
 	}
-	scanner.free()
 
+	// Review if we are on a final state
+	final_states := [3, 4, 5]
+	if !final_states.contains(state) {
+		error('Invalid opcode name ${token[0]}')
+	}
+
+	scanner.free()
 	opcode_name := token
-	println('Opcode name : ${opcode_name}')
+
+	// Get condition part
 	mut condition_string := utf32_to_str(u32(scanner.next()))
 	condition_string += utf32_to_str(u32(scanner.next()))
-	println('Condition string : ${condition_string}')
+	condition := condition_from_string(condition_string) or {OpcodeCondition.al}
 
-	tokens := cleaned_opcode_text.fields()
-	println('Tokens : ${tokens}')
-
-
-	mut rd := register_number_from_string(tokens[1]) or {0xFF}
-	conditionb := if condition := condition_from_string(condition_string) {
-		condition
-	} else {
-		rd = register_number_from_string(opcode_text[4..6])!
-		OpcodeCondition.al
-	}
+	rd := register_number_from_string(tokens[1]) or {0xFF}
+	rn := register_number_from_string(tokens[2]) or {0xFF}
 
 	if opcode_name == 'ADC' {
 		return biogba.ADCOpcode{
-			condition: conditionb
+			condition: condition
 			rd: rd
-			rn: 0x3
+			rn: rn
 			shift_operand: biogba.ShiftOperandImmediate{
 				value: 0x10
 				rotate: 0

@@ -79,23 +79,23 @@ fn test_assembler_adc_rd() {
 /*
 Test assembler adc with different Rn
 */
-// fn test_assembler_adc_rn() {
-// 	opcode_string := 'ADC R5, R13, #0x10'
+fn test_assembler_adc_rn() {
+	opcode_string := 'ADC R5, R13, #0x10'
 
-// 	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
-// 	expected_opcode := biogba.ADCOpcode {
-// 		condition: biogba.OpcodeCondition.al
-// 		rd: 0x5
-// 		rn: 0xd
-// 		s_bit: false
-// 		shift_operand: biogba.ShiftOperandImmediate {
-// 			value: 0x10
-// 			rotate: 0
-// 		}
-// 	}
+	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.al
+		rd: 0x5
+		rn: 0xd
+		s_bit: false
+		shift_operand: biogba.ShiftOperandImmediate {
+			value: 0x10
+			rotate: 0
+		}
+	}
 
-// 	assert opcode is biogba.ADCOpcode
-// 	if opcode is biogba.ADCOpcode {
-// 		assert opcode  == expected_opcode
-// 	}
-// }
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
