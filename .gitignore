@@ -7,3 +7,6 @@ main
 *.dll
 vls.log
 .vscode
+*.png
+*.gba
+*.o
