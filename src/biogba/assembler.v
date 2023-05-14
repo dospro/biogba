@@ -52,6 +52,30 @@ fn register_number_from_string(register_string string) !u8 {
 	}
 }
 
+enum TokenType {
+	opcode_name
+	s_bit
+	condition
+	register
+	expression
+}
+
+pub struct OpcodeToken {
+	token_value string
+	token_type TokenType
+}
+
+pub struct OpcodeParser {
+	mut:
+	opcode_string string
+	current_string_index u32
+}
+
+fn (mut self OpcodeParser) init(opcode_string string) {
+	self.opcode_string = opcode_string
+	self.current_string_index = 0
+}
+
 
 fn opcode_from_string(opcode_text string) !Opcode {
 
@@ -61,68 +85,223 @@ fn opcode_from_string(opcode_text string) !Opcode {
 	// Separate tokens
 	tokens := cleaned_opcode_text.fields()
 
-	// Parse first token
+	mut general_state := 0
+	mut real_token := OpcodeToken{}
+	mut tokens_list := []OpcodeToken{}
+	println("Token0 ${tokens[0]}")
 	mut scanner := textscanner.new(tokens[0])
-	mut token := ''
-	mut state := 0
-
-	opcode_name_transitions := {
-		0: {
-			'A': 1
-			'B': 5
-		}
-		1: {
-			'D': 2
-		}
-		2: {
-			'C': 3
-			'D': 4
-		}
-	}
 
 	for {
-		next_character := utf32_to_str(u32(scanner.peek()))
-		if next_state := opcode_name_transitions[state][next_character] {
-			state = next_state
-			token += next_character
-			scanner.skip()
-		} else {
-			println('Invalid character ${next_character}')
-			break
-		}
-	}
+		println('General state ${general_state}')
+		match general_state {
+			0 {
+				opcode_name_transitions := {
+					0: {
+						'A': 1
+						'B': 5
+					}
+					1: {
+						'D': 2
+					}
+					2: {
+						'C': 3
+						'D': 4
+					}
+				}
+				// Parse first token
+				
+				mut token := ''
+				mut state := 0
 
-	// Review if we are on a final state
-	final_states := [3, 4, 5]
-	if !final_states.contains(state) {
-		error('Invalid opcode name ${token[0]}')
-	}
+				for {
+					next_character := utf32_to_str(u32(scanner.peek()))
+					if next_state := opcode_name_transitions[state][next_character] {
+						state = next_state
+						token += next_character
+						println('Next character ${next_character}')
+						scanner.next()
+					} else {
+						println('Invalid character ${next_character}')
+						break
+					}
+				}
+				println('Token ${token}')
 
-	scanner.free()
-	opcode_name := token
+				// Review if we are on a final state
+				final_states := [3, 4, 5]
+				if !final_states.contains(state) {
+					error('Invalid opcode name ${token[0]}')
+				}
 
-	// Get condition part
-	mut condition_string := utf32_to_str(u32(scanner.next()))
-	condition_string += utf32_to_str(u32(scanner.next()))
-	condition := condition_from_string(condition_string) or {OpcodeCondition.al}
+				
+				general_state = 1
+				real_token = OpcodeToken{
+					token_value: token
+					token_type: TokenType.opcode_name
+				}
+			}
+			1 {
+				// We have 3 cases:
+				// 1. Condition string
+				// 2. S flag
+				// 3. register
 
-	rd := register_number_from_string(tokens[1]) or {0xFF}
-	rn := register_number_from_string(tokens[2]) or {0xFF}
+				// If the internal scanner is our of characters, then 
+				// the next token is a register and is inside the next 
+				// tokens element
+				
+				if scanner.peek() == -1 {
+					general_state = 4
+					real_token = OpcodeToken{
+						token_value: tokens[1]
+						token_type: TokenType.register
+					}
+				} else {
+					// If the next character is an S, then we have a S flag
+					mut token_string := utf32_to_str(u32(scanner.next()))
+					if token_string == 'S' {
+						general_state = 3
+						real_token = OpcodeToken{
+							token_value: 'S'
+							token_type: TokenType.s_bit
+						}
+					} else {
+						// Otherwise, we have a condition
+						token_string += utf32_to_str(u32(scanner.next()))
+						general_state = 2
+						real_token = OpcodeToken{
+							token_value: token_string
+							token_type: TokenType.condition
+						}
+					}
+				}
+			}
+			2 {
+				// After a condition we can have
+				// 1. An S flag
+				// 2. A register
 
-	if opcode_name == 'ADC' {
-		return biogba.ADCOpcode{
-			condition: condition
-			rd: rd
-			rn: rn
-			shift_operand: biogba.ShiftOperandImmediate{
-				value: 0x10
-				rotate: 0
+				// If the internal scanner is our of characters, then
+				// the next token is a register and is inside the next
+				// tokens element
+				if scanner.peek() == -1 {
+					general_state = 4
+					real_token = OpcodeToken{
+						token_value: tokens[1]
+						token_type: TokenType.register
+					}
+				} else {
+					// If the next character is an S, then we have a S flag
+					mut token_string := utf32_to_str(u32(scanner.next()))
+					if token_string == 'S' {
+						general_state = 3
+						real_token = OpcodeToken{
+							token_value: 'S'
+							token_type: TokenType.s_bit
+						}
+					}
+				}
+			}
+			3 {
+				// After an S flag we can only have a register
+				general_state = 4
+				real_token = OpcodeToken{
+					token_value: tokens[1]
+					token_type: TokenType.register
+				}
+			}
+			4 {
+				// After the first register we can only have a second register
+				general_state = 5
+				real_token = OpcodeToken{
+					token_value: tokens[2]
+					token_type: TokenType.register
+				}
+			}
+			5 {
+				// After the second register we can have:
+				// 1. An expression
+				// 2. A register
+
+				// If the token starts with R, then it is a register
+				if tokens[3].substr(0, 1) == 'R' {
+					println('Register ${tokens[3]}')
+					general_state = 6
+					real_token = OpcodeToken{
+						token_value: tokens[3]
+						token_type: TokenType.register
+					}
+				} else {
+					// Otherwise, it is an expression
+					println('Expression ${tokens[3]}')
+					general_state = 11
+					real_token = OpcodeToken{
+						token_value: tokens[3]
+						token_type: TokenType.expression
+					}
+				}
+			}
+			else {
+				error('Invalid state ${general_state}')
 			}
 		}
-	} else {
-		return biogba.ADDOpcode{
-			rd: 0x0
-			rn: 0x0
+		tokens_list << real_token
+
+		if general_state == 11 {
+			opocode_name := tokens_list[0].token_value
+			mut condition := biogba.OpcodeCondition.al
+			mut s_bit := false
+			mut rd := u8(0x0)
+			mut rn := u8(0x0)
+			mut rm := u8(0x0)
+			mut immediate_value := u8(0x0)
+
+			mut current_token := 1
+			if tokens_list[current_token].token_type == TokenType.condition {
+				condition = condition_from_string(tokens_list[1].token_value) or {OpcodeCondition.al}
+				current_token += 1
+			} else {
+				condition = biogba.OpcodeCondition.al
+			}
+			if tokens_list[current_token].token_type == TokenType.s_bit {
+				s_bit = true
+				current_token += 1
+			} else {
+				s_bit = false
+			}
+			if tokens_list[current_token].token_type == TokenType.register {
+				rd = register_number_from_string(tokens_list[current_token].token_value)!
+				current_token += 1
+				println('Rd ${rd}')
+			} else {
+				error('Invalid register')
+			}
+			if tokens_list[current_token].token_type == TokenType.register {
+				rn = register_number_from_string(tokens_list[current_token].token_value) or {panic('Invalid register')}
+				println('Rn ${rn}')
+				current_token += 1
+			} else {
+				error('Invalid register')
+			}
+			if tokens_list[current_token].token_type == TokenType.expression {
+				immediate_value = tokens_list[current_token].token_value[1..].u8()
+				println('Immediate value ${immediate_value}')
+			} else {
+				error('Invalid expression ${tokens_list[current_token].token_value}')
+			}
+			scanner.free()
+
+			return biogba.ADCOpcode{
+				condition: condition				
+				rd: rd
+				rn: rn
+				shift_operand: biogba.ShiftOperandImmediate{
+					value: immediate_value
+					rotate: 0
+				}
+			}
 		}
 	}
+
+	return error('Invalid opcode')
 }

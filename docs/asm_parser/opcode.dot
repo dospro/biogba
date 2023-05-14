@@ -7,6 +7,8 @@ digraph g {
   1 -> 2 [label=condition]
   2 -> 3 [label=S]
   1 -> 3 [label=S]
+  1 -> 4 [label=register]
+  2 -> 4 [label=register]
   3 -> 4 [label=register]
   4 -> 5 [label=register]
   5 -> 6 [label=register]
@@ -15,7 +17,5 @@ digraph g {
   7 -> 9 [label=expression]
   6 -> 10 [label=RRX]
   5 -> 11 [label=expression]
-
-  "11" [style="filled"]
 
 }
