@@ -101,7 +101,7 @@ fn test_assembler_adc_rn() {
 }
 
 /*
-Test assembler adc with 3rd token is immediate
+Test assembler adc with 3rd token as immediate value
 */
 fn test_assembler_adc_immediate() {
 	opcode_string := 'ADC R5, R3, #0xEF'
@@ -123,3 +123,86 @@ fn test_assembler_adc_immediate() {
 		assert opcode  == expected_opcode
 	}
 }
+
+/* 
+Test s bit with no condition
+*/
+fn test_assembler_adc_s_bit() {
+	opcode_string := 'ADCS R0, R1, #0x01'
+
+	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.al
+		rd: 0x0
+		rn: 0x1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandImmediate {
+			value: 0x01
+			rotate: 0
+		}
+	}
+
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
+
+/*
+Test s bit with condition
+*/
+fn test_assembler_adc_s_bit_and_condition() {
+	opcode_string := 'ADCHIS R0, R1, #0x01'
+
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.hi
+		rd: 0x0
+		rn: 0x1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandImmediate {
+			value: 0x01
+			rotate: 0
+		}
+	}
+
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
+
+/*
+Test simple register mode ( LSL expression )
+*/
+fn test_assembler_adc_register_mode() {
+	opcode_string := 'ADCEQS R15, R14, R2, LSL, #1'
+
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.eq
+		rd: 15
+		rn: 14
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister {
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 1
+		}
+	}
+
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
+// Test different shiftName (ASR) (covers LSR)
+// Test RXX
+// Test register-register mode
+
+// Errors
+// Test bad expression in immediate
+// Test bad register?
+// Test mal formed opcode
+// Register-register expression can only take values 0-31

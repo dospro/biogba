@@ -2,29 +2,30 @@ module biogba
 
 import strings.textscanner
 
-/* Function that parses a string into a OpcodeCondition*/
+// Function that parses a string into a OpcodeCondition
 fn condition_from_string(condition_string string) ?OpcodeCondition {
 	return match condition_string {
-		'EQ' {biogba.OpcodeCondition.eq}
-		'NE' {biogba.OpcodeCondition.ne}
-		'CS' {biogba.OpcodeCondition.cs}
-		'CC' {biogba.OpcodeCondition.cc}
-		'MI' {biogba.OpcodeCondition.mi}
-		'PL' {biogba.OpcodeCondition.pl}
-		'VS' {biogba.OpcodeCondition.vs}
-		'VC' {biogba.OpcodeCondition.vc}
-		'HI' {biogba.OpcodeCondition.hi}
-		'LS' {biogba.OpcodeCondition.ls}
-		'GE' {biogba.OpcodeCondition.ge}
-		'LT' {biogba.OpcodeCondition.lt}
-		'GT' {biogba.OpcodeCondition.gt}
-		'LE' {biogba.OpcodeCondition.le}
-		'AL' {biogba.OpcodeCondition.al}
-		else {none}
+		'EQ' { OpcodeCondition.eq }
+		'NE' { OpcodeCondition.ne }
+		'CS' { OpcodeCondition.cs }
+		'CC' { OpcodeCondition.cc }
+		'MI' { OpcodeCondition.mi }
+		'PL' { OpcodeCondition.pl }
+		'VS' { OpcodeCondition.vs }
+		'VC' { OpcodeCondition.vc }
+		'HI' { OpcodeCondition.hi }
+		'LS' { OpcodeCondition.ls }
+		'GE' { OpcodeCondition.ge }
+		'LT' { OpcodeCondition.lt }
+		'GT' { OpcodeCondition.gt }
+		'LE' { OpcodeCondition.le }
+		'AL' { OpcodeCondition.al }
+		else { none }
 	}
 }
 
-/* Returns the register number from a register string 
+/*
+Returns the register number from a register string
 Example
 R15 -> 0xF
 */
@@ -47,7 +48,7 @@ fn register_number_from_string(register_string string) !u8 {
 		'r14' {0xE}
 		'r15' {0xF}
 		else {
-			error("Invalid register ${register_string}")
+			error('Invalid register ${register_string}')
 		}
 	}
 }
@@ -58,16 +59,17 @@ enum TokenType {
 	condition
 	register
 	expression
+	shift_name
 }
 
 pub struct OpcodeToken {
 	token_value string
-	token_type TokenType
+	token_type  TokenType
 }
 
 pub struct OpcodeParser {
-	mut:
-	opcode_string string
+mut:
+	opcode_string        string
 	current_string_index u32
 }
 
@@ -76,10 +78,12 @@ fn (mut self OpcodeParser) init(opcode_string string) {
 	self.current_string_index = 0
 }
 
-
+/*
+Returns a Result type with either an Opcode struct from a string
+representation or an error in case something goes wrong
+*/
 fn opcode_from_string(opcode_text string) !Opcode {
-
-	// Remove commas
+	// Remove commas	
 	cleaned_opcode_text := opcode_text.replace(',', ' ')
 
 	// Separate tokens
@@ -88,7 +92,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 	mut general_state := 0
 	mut real_token := OpcodeToken{}
 	mut tokens_list := []OpcodeToken{}
-	println("Token0 ${tokens[0]}")
+	println('Token0 ${tokens[0]}')
 	mut scanner := textscanner.new(tokens[0])
 
 	for {
@@ -109,12 +113,13 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					}
 				}
 				// Parse first token
-				
+
 				mut token := ''
 				mut state := 0
 
 				for {
 					next_character := utf32_to_str(u32(scanner.peek()))
+					// TODO: Verify indexes are valid
 					if next_state := opcode_name_transitions[state][next_character] {
 						state = next_state
 						token += next_character
@@ -127,13 +132,13 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				}
 				println('Token ${token}')
 
-				// Review if we are on a final state
+				// If the current state is not a final state that means we didn't
+				// find a valid opcode name.
 				final_states := [3, 4, 5]
 				if !final_states.contains(state) {
-					error('Invalid opcode name ${token[0]}')
+					return error('Invalid opcode name ${token[0]}')
 				}
 
-				
 				general_state = 1
 				real_token = OpcodeToken{
 					token_value: token
@@ -146,10 +151,9 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// 2. S flag
 				// 3. register
 
-				// If the internal scanner is our of characters, then 
-				// the next token is a register and is inside the next 
+				// If the internal scanner is out of characters, then
+				// the next token is a register and is inside the next
 				// tokens element
-				
 				if scanner.peek() == -1 {
 					general_state = 4
 					real_token = OpcodeToken{
@@ -199,6 +203,8 @@ fn opcode_from_string(opcode_text string) !Opcode {
 							token_value: 'S'
 							token_type: TokenType.s_bit
 						}
+					} else {
+						return error('After opcode name there was no S, register or condition. Mal formed opcode')
 					}
 				}
 			}
@@ -241,15 +247,49 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					}
 				}
 			}
+			6 {
+				// After a 3th register we are now in register mode. 
+				// So we either hace RXX or shiftname
+				general_state = 7
+				println('Shift Name ${tokens[4]}')
+				real_token = OpcodeToken{
+					token_value: 'LSL'
+					token_type: TokenType.shift_name
+				}
+			}
+			7 {
+				// After the shift name we can have:
+				// 1. Expression (Shift value)
+				// 2. Register
+				println('Expression ${tokens[5]}')
+				general_state = 9
+				real_token = OpcodeToken{
+					token_value: tokens[5]
+					token_type: TokenType.expression
+				}
+			}
 			else {
-				error('Invalid state ${general_state}')
+				return error('Invalid state ${general_state}')
 			}
 		}
 		tokens_list << real_token
 
-		if general_state == 11 {
+		if general_state == 9 {
+			return ADCOpcode{
+				condition: OpcodeCondition.eq
+				rd: 15
+				rn: 14
+				s_bit: true
+				shift_operand: ShiftOperandRegister{
+					rm: 0x2
+					register_shift: false
+					shift_type: ShiftType.lsl
+					shift_value: 1
+				}
+			}
+		} else if general_state == 11 {
 			opocode_name := tokens_list[0].token_value
-			mut condition := biogba.OpcodeCondition.al
+			mut condition := OpcodeCondition.al
 			mut s_bit := false
 			mut rd := u8(0x0)
 			mut rn := u8(0x0)
@@ -258,10 +298,12 @@ fn opcode_from_string(opcode_text string) !Opcode {
 
 			mut current_token := 1
 			if tokens_list[current_token].token_type == TokenType.condition {
-				condition = condition_from_string(tokens_list[1].token_value) or {OpcodeCondition.al}
+				condition = condition_from_string(tokens_list[1].token_value) or {
+					OpcodeCondition.al
+				}
 				current_token += 1
 			} else {
-				condition = biogba.OpcodeCondition.al
+				condition = OpcodeCondition.al
 			}
 			if tokens_list[current_token].token_type == TokenType.s_bit {
 				s_bit = true
@@ -277,7 +319,9 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				error('Invalid register')
 			}
 			if tokens_list[current_token].token_type == TokenType.register {
-				rn = register_number_from_string(tokens_list[current_token].token_value) or {panic('Invalid register')}
+				rn = register_number_from_string(tokens_list[current_token].token_value) or {
+					panic('Invalid register')
+				}
 				println('Rn ${rn}')
 				current_token += 1
 			} else {
@@ -291,11 +335,12 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			}
 			scanner.free()
 
-			return biogba.ADCOpcode{
-				condition: condition				
+			return ADCOpcode{
+				condition: condition
 				rd: rd
 				rn: rn
-				shift_operand: biogba.ShiftOperandImmediate{
+				s_bit: s_bit
+				shift_operand: ShiftOperandImmediate{
 					value: immediate_value
 					rotate: 0
 				}
