@@ -1,6 +1,6 @@
 digraph g {
     rankdir=LR;
-    node [shape = doublecircle]; 3 4 5;
+    node [shape = doublecircle]; 3 4 5 7;
 	node [shape = circle];
 
   0 -> 1 [label=A]
@@ -9,5 +9,15 @@ digraph g {
   2 -> 4 [label=D]
 
   0 -> 5 [label=B]
+
+  3 -> 8 [label=S]
+  4 -> 8 [label=S]
+  7 -> 8 [label=S]
+
+  3 -> "X"
+  4 -> "X"
+
+  "X" -> 6 [label=E]
+  6 -> 7 [label=Q]
 
 }

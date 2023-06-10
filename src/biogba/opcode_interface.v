@@ -270,6 +270,8 @@ pub fn (self RegisterOffset) as_hex() u32 {
 	return (u32(self.shift_value) << 7) | (u32(self.shift_type) << 5 ) | u32(self.rm)
 }
 
+type Offset = u16 | RegisterOffset
+
 pub struct LDROpcode {
 	condition OpcodeCondition = OpcodeCondition.al
 	rn u8
@@ -278,7 +280,7 @@ pub struct LDROpcode {
 	u_bit bool
 	b_bit bool
 	w_bit bool
-	address u16 | RegisterOffset
+	address Offset
 }
 
 

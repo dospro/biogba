@@ -1,7 +1,5 @@
 module biogba
 
-import strings.textscanner
-
 // Function that parses a string into a OpcodeCondition
 fn condition_from_string(condition_string string) ?OpcodeCondition {
 	return match condition_string {
@@ -67,15 +65,76 @@ pub struct OpcodeToken {
 	token_type  TokenType
 }
 
-pub struct OpcodeParser {
+pub struct OpcodeNameParser {
+	opcode_string      string
+	name_final_states  []int = [3, 4, 5]
+	transitions_matrix map[int]map[string]int   = {
+		0: {
+			'A': 1
+			'B': 5
+		}
+		1: {
+			'D': 2
+		}
+		2: {
+			'C': 3
+			'D': 4
+		}
+	}
 mut:
-	opcode_string        string
-	current_string_index u32
+	index int
+	state int
+	token string
 }
 
-fn (mut self OpcodeParser) init(opcode_string string) {
-	self.opcode_string = opcode_string
-	self.current_string_index = 0
+/*
+The next method, which makes OpcodeNameParser an Iterator, parses the first
+token of an opcode which can contain up to 3 elements:
+1. Opcode Name. Ex: ADC, B, MUL
+2. Condition. Ex: EQ, GT, AL (optional)
+3. S (optional)
+
+Syntax: {opcode_name}{<cond>}{S}
+*/
+fn (mut iter OpcodeNameParser) next() ?string {
+	if iter.index >= iter.opcode_string.len {
+		return none
+	}
+	if iter.opcode_string.is_blank() {
+		return none
+	}
+	// If we already returned opcode name, then we can stop using states
+	if iter.name_final_states.contains(iter.state) {
+		if iter.opcode_string[iter.index].ascii_str() == 'S' {
+			iter.index += 1
+			return 'S'
+		} else {
+			if iter.index + 1 >= iter.opcode_string.len {
+				return none
+			}
+			condition := iter.opcode_string[iter.index..iter.index + 2]
+			iter.index += 2
+			return condition
+		}
+	}
+	for {
+		if iter.index >= iter.opcode_string.len {
+			break
+		}
+		next_character := iter.opcode_string[iter.index].ascii_str()
+		if next_state := iter.transitions_matrix[iter.state][next_character] {
+			iter.state = next_state
+			iter.token += next_character
+			iter.index += 1
+		} else {
+			break
+		}
+	}
+	if !iter.name_final_states.contains(iter.state) {
+		println('Break the loop but we are not in a final state ${iter.state}')
+		return none
+	}
+	return iter.token
 }
 
 /*
@@ -93,51 +152,16 @@ fn opcode_from_string(opcode_text string) !Opcode {
 	mut real_token := OpcodeToken{}
 	mut tokens_list := []OpcodeToken{}
 	println('Token0 ${tokens[0]}')
-	mut scanner := textscanner.new(tokens[0])
+	mut my_scanner := OpcodeNameParser{
+		opcode_string: tokens[0]
+	}
 
 	for {
 		println('General state ${general_state}')
 		match general_state {
 			0 {
-				opcode_name_transitions := {
-					0: {
-						'A': 1
-						'B': 5
-					}
-					1: {
-						'D': 2
-					}
-					2: {
-						'C': 3
-						'D': 4
-					}
-				}
-				// Parse first token
-
-				mut token := ''
-				mut state := 0
-
-				for {
-					next_character := utf32_to_str(u32(scanner.peek()))
-					// TODO: Verify indexes are valid
-					if next_state := opcode_name_transitions[state][next_character] {
-						state = next_state
-						token += next_character
-						println('Next character ${next_character}')
-						scanner.next()
-					} else {
-						println('Invalid character ${next_character}')
-						break
-					}
-				}
-				println('Token ${token}')
-
-				// If the current state is not a final state that means we didn't
-				// find a valid opcode name.
-				final_states := [3, 4, 5]
-				if !final_states.contains(state) {
-					return error('Invalid opcode name ${token[0]}')
-				}
+				token := my_scanner.next() or { return error('Invalid opcode name') }
+				println('Opcode Name ${token}')
 
 				general_state = 1
 				real_token = OpcodeToken{
@@ -154,27 +178,27 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// If the internal scanner is out of characters, then
 				// the next token is a register and is inside the next
 				// tokens element
-				if scanner.peek() == -1 {
-					general_state = 4
-					real_token = OpcodeToken{
-						token_value: tokens[1]
-						token_type: TokenType.register
+				token := my_scanner.next()
+
+				match token {
+					none {
+						general_state = 4
+						real_token = OpcodeToken{
+							token_value: tokens[1]
+							token_type: TokenType.register
+						}
 					}
-				} else {
-					// If the next character is an S, then we have a S flag
-					mut token_string := utf32_to_str(u32(scanner.next()))
-					if token_string == 'S' {
+					'S' {
 						general_state = 3
 						real_token = OpcodeToken{
 							token_value: 'S'
 							token_type: TokenType.s_bit
 						}
-					} else {
-						// Otherwise, we have a condition
-						token_string += utf32_to_str(u32(scanner.next()))
+					}
+					else {
 						general_state = 2
 						real_token = OpcodeToken{
-							token_value: token_string
+							token_value: token or {''}
 							token_type: TokenType.condition
 						}
 					}
@@ -188,22 +212,24 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// If the internal scanner is our of characters, then
 				// the next token is a register and is inside the next
 				// tokens element
-				if scanner.peek() == -1 {
-					general_state = 4
-					real_token = OpcodeToken{
-						token_value: tokens[1]
-						token_type: TokenType.register
+				token := my_scanner.next()
+
+				match token {
+					none {
+						general_state = 4
+						real_token = OpcodeToken{
+							token_value: tokens[1]
+							token_type: TokenType.register
+						}
 					}
-				} else {
-					// If the next character is an S, then we have a S flag
-					mut token_string := utf32_to_str(u32(scanner.next()))
-					if token_string == 'S' {
+					'S' {
 						general_state = 3
 						real_token = OpcodeToken{
 							token_value: 'S'
 							token_type: TokenType.s_bit
 						}
-					} else {
+					}
+					else {
 						return error('After opcode name there was no S, register or condition. Mal formed opcode')
 					}
 				}
@@ -248,7 +274,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				}
 			}
 			6 {
-				// After a 3th register we are now in register mode. 
+				// After a 3th register we are now in register mode.
 				// So we either hace RXX or shiftname
 				general_state = 7
 				println('Shift Name ${tokens[4]}')
@@ -288,7 +314,6 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				}
 			}
 		} else if general_state == 11 {
-			opocode_name := tokens_list[0].token_value
 			mut condition := OpcodeCondition.al
 			mut s_bit := false
 			mut rd := u8(0x0)
@@ -333,7 +358,6 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			} else {
 				error('Invalid expression ${tokens_list[current_token].token_value}')
 			}
-			scanner.free()
 
 			return ADCOpcode{
 				condition: condition

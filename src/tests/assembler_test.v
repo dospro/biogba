@@ -7,7 +7,7 @@ Test assembler with simple adc instruction
 fn test_assembler_adc_simple() {
 	opcode_string := 'ADC R5, R3, #0x10'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
 		condition: biogba.OpcodeCondition.al
 		rd: 0x5
@@ -32,7 +32,7 @@ Test assembler adc with a condition set
 fn test_assemblder_adc_condition() {
 	opcode_string := 'ADCNE R5, R3, #0x10'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
 		condition: biogba.OpcodeCondition.ne
 		rd: 0x5
@@ -57,7 +57,7 @@ Test assemblder adc with different Rd
 fn test_assembler_adc_rd() {
 	opcode_string := 'ADCGE R15, R3, #0x10'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
 		condition: biogba.OpcodeCondition.ge
 		rd: 0xf
@@ -82,7 +82,7 @@ Test assembler adc with different Rn
 fn test_assembler_adc_rn() {
 	opcode_string := 'ADC R5, R13, #0x10'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
 		condition: biogba.OpcodeCondition.al
 		rd: 0x5
@@ -106,7 +106,7 @@ Test assembler adc with 3rd token as immediate value
 fn test_assembler_adc_immediate() {
 	opcode_string := 'ADC R5, R3, #0xEF'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
 		condition: biogba.OpcodeCondition.al
 		rd: 0x5
@@ -130,7 +130,7 @@ Test s bit with no condition
 fn test_assembler_adc_s_bit() {
 	opcode_string := 'ADCS R0, R1, #0x01'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic("Error") }
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
 		condition: biogba.OpcodeCondition.al
 		rd: 0x0
