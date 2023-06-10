@@ -299,21 +299,8 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			}
 		}
 		tokens_list << real_token
-
-		if general_state == 9 {
-			return ADCOpcode{
-				condition: OpcodeCondition.eq
-				rd: 15
-				rn: 14
-				s_bit: true
-				shift_operand: ShiftOperandRegister{
-					rm: 0x2
-					register_shift: false
-					shift_type: ShiftType.lsl
-					shift_value: 1
-				}
-			}
-		} else if general_state == 11 {
+		final_states := [9, 11]
+		if final_states.contains(general_state) {
 			mut condition := OpcodeCondition.al
 			mut s_bit := false
 			mut rd := u8(0x0)
@@ -341,35 +328,63 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				current_token += 1
 				println('Rd ${rd}')
 			} else {
-				error('Invalid register')
+				return error('Invalid register')
 			}
 			if tokens_list[current_token].token_type == TokenType.register {
 				rn = register_number_from_string(tokens_list[current_token].token_value) or {
-					panic('Invalid register')
+					return error('Invalid register')
 				}
 				println('Rn ${rn}')
 				current_token += 1
 			} else {
 				error('Invalid register')
 			}
-			if tokens_list[current_token].token_type == TokenType.expression {
-				immediate_value = tokens_list[current_token].token_value[1..].u8()
-				println('Immediate value ${immediate_value}')
-			} else {
-				error('Invalid expression ${tokens_list[current_token].token_value}')
-			}
 
-			return ADCOpcode{
-				condition: condition
-				rd: rd
-				rn: rn
-				s_bit: s_bit
-				shift_operand: ShiftOperandImmediate{
-					value: immediate_value
-					rotate: 0
+			match general_state {
+				9 {
+					if tokens_list[current_token].token_type == TokenType.register {
+						rm = register_number_from_string(tokens_list[current_token].token_value)!
+						current_token += 1
+						println('Rm ${rm}')
+					} else {
+						return error('Expecting a register')
+					}
+					return ADCOpcode{
+						condition: condition
+						rd: rd
+						rn: rn
+						s_bit: s_bit
+						shift_operand: ShiftOperandRegister{
+							rm: rm
+							register_shift: false
+							shift_type: biogba.ShiftType.lsl
+							shift_value: 1
+						}
+					}
+
 				}
-			}
-		}
+				11 {
+					if tokens_list[current_token].token_type == TokenType.expression {
+						immediate_value = tokens_list[current_token].token_value[1..].u8()
+						println('Immediate value ${immediate_value}')
+					} else {
+						return error('Invalid expression ${tokens_list[current_token].token_value}')
+					}
+					return ADCOpcode{
+						condition: condition
+						rd: rd
+						rn: rn
+						s_bit: s_bit
+						shift_operand: ShiftOperandImmediate{
+							value: immediate_value
+							rotate: 0
+						}
+					}
+				} else {
+					return error('Not implemented')
+				}
+			}	
+		}		
 	}
 
 	return error('Invalid opcode')
