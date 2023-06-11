@@ -285,7 +285,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					println('Expression ${tokens[3]}')
 					general_state = 11
 					real_token = OpcodeToken{
-						token_value: tokens[3][1..].u8()
+						token_value: u8(tokens[3][1..].parse_uint(16, 8)!)
 						token_type: TokenType.expression
 					}
 				}
@@ -304,10 +304,10 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// After the shift name we can have:
 				// 1. Expression (Shift value)
 				// 2. Register
-				println('Expression ${tokens[5]}')
+				println('Expression ${tokens[5][1..]}')
 				general_state = 9
 				real_token = OpcodeToken{
-					token_value: tokens[5][1..].u8()
+					token_value: u8(tokens[5][1..].parse_uint(16, 8)!)
 					token_type: TokenType.expression
 				}
 			}
@@ -359,6 +359,8 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					current_token += 1
 					println('Rm ${rm}')
 					shift_type := tokens_list[current_token].token_value as ShiftType
+					current_token += 1
+					expression := tokens_list[current_token].token_value as u8
 					return ADCOpcode{
 						condition: condition
 						rd: rd
@@ -368,7 +370,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 							rm: rm
 							register_shift: false
 							shift_type: shift_type
-							shift_value: 1
+							shift_value: expression
 						}
 					}
 

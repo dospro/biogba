@@ -5,7 +5,7 @@ import src.biogba
 Test assembler with simple adc instruction
 */
 fn test_assembler_adc_simple() {
-	opcode_string := 'ADC R5, R3, #0x10'
+	opcode_string := 'ADC R5, R3, #10'
 
 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
@@ -30,7 +30,7 @@ Test assembler adc with a condition set
 */
 
 fn test_assemblder_adc_condition() {
-	opcode_string := 'ADCNE R5, R3, #0x10'
+	opcode_string := 'ADCNE R5, R3, #10'
 
 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
@@ -55,7 +55,7 @@ fn test_assemblder_adc_condition() {
 Test assemblder adc with different Rd
 */
 fn test_assembler_adc_rd() {
-	opcode_string := 'ADCGE R15, R3, #0x10'
+	opcode_string := 'ADCGE R15, R3, #10'
 
 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
@@ -80,7 +80,7 @@ fn test_assembler_adc_rd() {
 Test assembler adc with different Rn
 */
 fn test_assembler_adc_rn() {
-	opcode_string := 'ADC R5, R13, #0x10'
+	opcode_string := 'ADC R5, R13, #10'
 
 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
@@ -104,7 +104,7 @@ fn test_assembler_adc_rn() {
 Test assembler adc with 3rd token as immediate value
 */
 fn test_assembler_adc_immediate() {
-	opcode_string := 'ADC R5, R3, #0xEF'
+	opcode_string := 'ADC R5, R3, #EF'
 
 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
@@ -128,7 +128,7 @@ fn test_assembler_adc_immediate() {
 Test s bit with no condition
 */
 fn test_assembler_adc_s_bit() {
-	opcode_string := 'ADCS R0, R1, #0x01'
+	opcode_string := 'ADCS R0, R1, #01'
 
 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
@@ -152,7 +152,7 @@ fn test_assembler_adc_s_bit() {
 Test s bit with condition
 */
 fn test_assembler_adc_s_bit_and_condition() {
-	opcode_string := 'ADCHIS R0, R1, #0x01'
+	opcode_string := 'ADCHIS R0, R1, #01'
 
 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode {
@@ -250,7 +250,59 @@ fn test_assembler_adc_register_mode_asr() {
 	}
 }
 
-// Test RXX
+/*
+Test Register Mode with a different expression
+Expression has a 5 bits with. 0x1F
+*/
+fn test_assembler_adc_register_mode_expression() {
+	opcode_string := 'ADC R0, R1, R2, LSR, #1F'
+
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.al
+		rd: 0
+		rn: 1
+		s_bit: false
+		shift_operand: biogba.ShiftOperandRegister {
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.lsr
+			shift_value: 0x1F
+		}
+	}
+
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
+
+/*
+Test RXX shift type. Opcode should be interpreted as ROR 0
+*/
+// fn test_assembler_adc_register_mode_rxx() {
+// 	opcode_string := 'ADC R0, R1, R2, RXX'
+
+// 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+// 	expected_opcode := biogba.ADCOpcode {
+// 		condition: biogba.OpcodeCondition.al
+// 		rd: 0
+// 		rn: 1
+// 		s_bit: false
+// 		shift_operand: biogba.ShiftOperandRegister {
+// 			rm: 0x2
+// 			register_shift: false
+// 			shift_type: biogba.ShiftType.ror
+// 			shift_value: 0
+// 		}
+// 	}
+
+// 	assert opcode is biogba.ADCOpcode
+// 	if opcode is biogba.ADCOpcode {
+// 		assert opcode  == expected_opcode
+// 	}
+// }
+
 // Test register-register mode
 
 // Errors
