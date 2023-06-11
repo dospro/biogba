@@ -67,7 +67,7 @@ pub enum ShiftType {
 	ror
 }
 
-fn shift_type_from_value(value u32) ?ShiftType {
+fn shift_type_from_value(value u32) !ShiftType {
 	return match value {
 		0 {.lsl}
 		1 {.lsr}

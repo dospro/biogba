@@ -23,6 +23,21 @@ fn condition_from_string(condition_string string) ?OpcodeCondition {
 }
 
 /*
+Returns a ShiftType value from a string
+*/
+fn shift_type_from_string(value string) !ShiftType {
+	return match value.to_lower() {
+		'lsl' {.lsl}
+		'lsr' {.lsr}
+		'asr' {.asr}
+		'ror' {.ror}
+		else {
+			error('Invalid opcode shift operand string $value')
+		}
+	}
+}
+
+/*
 Returns the register number from a register string
 Example
 R15 -> 0xF
@@ -281,7 +296,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				general_state = 7
 				println('Shift Name ${tokens[4]}')
 				real_token = OpcodeToken{
-					token_value: ShiftType.lsl
+					token_value: shift_type_from_string(tokens[4])!
 					token_type: TokenType.shift_name
 				}
 			}
@@ -340,13 +355,10 @@ fn opcode_from_string(opcode_text string) !Opcode {
 
 			match general_state {
 				9 {
-					if tokens_list[current_token].token_type == TokenType.register {
-						rm = tokens_list[current_token].token_value as u8
-						current_token += 1
-						println('Rm ${rm}')
-					} else {
-						return error('Expected register Rm')
-					}
+					rm = tokens_list[current_token].token_value as u8
+					current_token += 1
+					println('Rm ${rm}')
+					shift_type := tokens_list[current_token].token_value as ShiftType
 					return ADCOpcode{
 						condition: condition
 						rd: rd
@@ -355,7 +367,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 						shift_operand: ShiftOperandRegister{
 							rm: rm
 							register_shift: false
-							shift_type: biogba.ShiftType.lsl
+							shift_type: shift_type
 							shift_value: 1
 						}
 					}

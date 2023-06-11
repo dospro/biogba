@@ -227,28 +227,28 @@ fn test_assembler_adc_register_mode_rm() {
 /*
 Test different shiftName (ASR) (covers LSR)
 */
-// fn test_assembler_adc_register_mode_asr() {
-// 	opcode_string := 'ADCNES R15, R14, R2, ASR, #1'
+fn test_assembler_adc_register_mode_asr() {
+	opcode_string := 'ADCNES R0, R1, R2, ASR, #1'
 
-// 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
-// 	expected_opcode := biogba.ADCOpcode {
-// 		condition: biogba.OpcodeCondition.ne
-// 		rd: 15
-// 		rn: 14
-// 		s_bit: true
-// 		shift_operand: biogba.ShiftOperandRegister {
-// 			rm: 0x2
-// 			register_shift: false
-// 			shift_type: biogba.ShiftType.lsl
-// 			shift_value: 1
-// 		}
-// 	}
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.ne
+		rd: 0
+		rn: 1
+		s_bit: true
+		shift_operand: biogba.ShiftOperandRegister {
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.asr
+			shift_value: 1
+		}
+	}
 
-// 	assert opcode is biogba.ADCOpcode
-// 	if opcode is biogba.ADCOpcode {
-// 		assert opcode  == expected_opcode
-// 	}
-// }
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
 
 // Test RXX
 // Test register-register mode
