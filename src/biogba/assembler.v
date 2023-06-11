@@ -2,22 +2,22 @@ module biogba
 
 // Function that parses a string into a OpcodeCondition
 fn condition_from_string(condition_string string) ?OpcodeCondition {
-	return match condition_string {
-		'EQ' { OpcodeCondition.eq }
-		'NE' { OpcodeCondition.ne }
-		'CS' { OpcodeCondition.cs }
-		'CC' { OpcodeCondition.cc }
-		'MI' { OpcodeCondition.mi }
-		'PL' { OpcodeCondition.pl }
-		'VS' { OpcodeCondition.vs }
-		'VC' { OpcodeCondition.vc }
-		'HI' { OpcodeCondition.hi }
-		'LS' { OpcodeCondition.ls }
-		'GE' { OpcodeCondition.ge }
-		'LT' { OpcodeCondition.lt }
-		'GT' { OpcodeCondition.gt }
-		'LE' { OpcodeCondition.le }
-		'AL' { OpcodeCondition.al }
+	return match condition_string.to_lower() {
+		'eq' { OpcodeCondition.eq }
+		'ne' { OpcodeCondition.ne }
+		'cs' { OpcodeCondition.cs }
+		'cc' { OpcodeCondition.cc }
+		'mi' { OpcodeCondition.mi }
+		'pl' { OpcodeCondition.pl }
+		'vs' { OpcodeCondition.vs }
+		'vc' { OpcodeCondition.vc }
+		'hi' { OpcodeCondition.hi }
+		'ls' { OpcodeCondition.ls }
+		'ge' { OpcodeCondition.ge }
+		'lt' { OpcodeCondition.lt }
+		'gt' { OpcodeCondition.gt }
+		'le' { OpcodeCondition.le }
+		'al' { OpcodeCondition.al }
 		else { none }
 	}
 }
@@ -51,6 +51,8 @@ fn register_number_from_string(register_string string) !u8 {
 	}
 }
 
+type TokenValue = string | u8 | bool | OpcodeCondition | ShiftType
+
 enum TokenType {
 	opcode_name
 	s_bit
@@ -61,7 +63,7 @@ enum TokenType {
 }
 
 pub struct OpcodeToken {
-	token_value string
+	token_value TokenValue
 	token_type  TokenType
 }
 
@@ -184,21 +186,21 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					none {
 						general_state = 4
 						real_token = OpcodeToken{
-							token_value: tokens[1]
+							token_value: register_number_from_string(tokens[1])!
 							token_type: TokenType.register
 						}
 					}
 					'S' {
 						general_state = 3
 						real_token = OpcodeToken{
-							token_value: 'S'
+							token_value: true
 							token_type: TokenType.s_bit
 						}
 					}
 					else {
 						general_state = 2
 						real_token = OpcodeToken{
-							token_value: token or {''}
+							token_value: condition_from_string(token or {''}) or {OpcodeCondition.al}
 							token_type: TokenType.condition
 						}
 					}
@@ -218,14 +220,14 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					none {
 						general_state = 4
 						real_token = OpcodeToken{
-							token_value: tokens[1]
+							token_value: register_number_from_string(tokens[1])!
 							token_type: TokenType.register
 						}
 					}
 					'S' {
 						general_state = 3
 						real_token = OpcodeToken{
-							token_value: 'S'
+							token_value: true
 							token_type: TokenType.s_bit
 						}
 					}
@@ -238,7 +240,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// After an S flag we can only have a register
 				general_state = 4
 				real_token = OpcodeToken{
-					token_value: tokens[1]
+					token_value: register_number_from_string(tokens[1])!
 					token_type: TokenType.register
 				}
 			}
@@ -246,7 +248,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// After the first register we can only have a second register
 				general_state = 5
 				real_token = OpcodeToken{
-					token_value: tokens[2]
+					token_value: register_number_from_string(tokens[2])!
 					token_type: TokenType.register
 				}
 			}
@@ -260,7 +262,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					println('Register ${tokens[3]}')
 					general_state = 6
 					real_token = OpcodeToken{
-						token_value: tokens[3]
+						token_value: register_number_from_string(tokens[3])!
 						token_type: TokenType.register
 					}
 				} else {
@@ -268,7 +270,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					println('Expression ${tokens[3]}')
 					general_state = 11
 					real_token = OpcodeToken{
-						token_value: tokens[3]
+						token_value: tokens[3][1..].u8()
 						token_type: TokenType.expression
 					}
 				}
@@ -279,7 +281,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				general_state = 7
 				println('Shift Name ${tokens[4]}')
 				real_token = OpcodeToken{
-					token_value: 'LSL'
+					token_value: ShiftType.lsl
 					token_type: TokenType.shift_name
 				}
 			}
@@ -290,7 +292,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				println('Expression ${tokens[5]}')
 				general_state = 9
 				real_token = OpcodeToken{
-					token_value: tokens[5]
+					token_value: tokens[5][1..].u8()
 					token_type: TokenType.expression
 				}
 			}
@@ -310,9 +312,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 
 			mut current_token := 1
 			if tokens_list[current_token].token_type == TokenType.condition {
-				condition = condition_from_string(tokens_list[1].token_value) or {
-					OpcodeCondition.al
-				}
+				condition = tokens_list[1].token_value as OpcodeCondition
 				current_token += 1
 			} else {
 				condition = OpcodeCondition.al
@@ -324,30 +324,28 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				s_bit = false
 			}
 			if tokens_list[current_token].token_type == TokenType.register {
-				rd = register_number_from_string(tokens_list[current_token].token_value)!
+				rd = tokens_list[current_token].token_value as u8
 				current_token += 1
 				println('Rd ${rd}')
 			} else {
-				return error('Invalid register')
+				return error('Expected register Rd')
 			}
 			if tokens_list[current_token].token_type == TokenType.register {
-				rn = register_number_from_string(tokens_list[current_token].token_value) or {
-					return error('Invalid register')
-				}
+				rn = tokens_list[current_token].token_value as u8
 				println('Rn ${rn}')
 				current_token += 1
 			} else {
-				error('Invalid register')
+				error('Expected register Rn')
 			}
 
 			match general_state {
 				9 {
 					if tokens_list[current_token].token_type == TokenType.register {
-						rm = register_number_from_string(tokens_list[current_token].token_value)!
+						rm = tokens_list[current_token].token_value as u8
 						current_token += 1
 						println('Rm ${rm}')
 					} else {
-						return error('Expecting a register')
+						return error('Expected register Rm')
 					}
 					return ADCOpcode{
 						condition: condition
@@ -365,7 +363,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				}
 				11 {
 					if tokens_list[current_token].token_type == TokenType.expression {
-						immediate_value = tokens_list[current_token].token_value[1..].u8()
+						immediate_value = tokens_list[current_token].token_value as u8
 						println('Immediate value ${immediate_value}')
 					} else {
 						return error('Invalid expression ${tokens_list[current_token].token_value}')
