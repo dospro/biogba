@@ -312,11 +312,19 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// After the shift name we can have:
 				// 1. Expression (Shift value)
 				// 2. Register
-				println('Expression ${tokens[5][1..]}')
-				general_state = 9
-				real_token = OpcodeToken{
-					token_value: u8(tokens[5][1..].parse_uint(16, 8)!)
-					token_type: TokenType.expression
+				println('Expression ${tokens[5]}')
+				if tokens[5].substr(0, 1).to_lower() == 'r' {
+					general_state = 8
+					real_token = OpcodeToken{
+						token_value: register_number_from_string(tokens[5])!
+						token_type: TokenType.register
+					}
+				} else {
+					general_state = 9
+					real_token = OpcodeToken{
+						token_value: u8(tokens[5][1..].parse_uint(16, 8)!)
+						token_type: TokenType.expression
+					}
 				}
 			}
 			else {
@@ -324,7 +332,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			}
 		}
 		tokens_list << real_token
-		final_states := [9, 10, 11]
+		final_states := [8, 9, 10, 11]
 		if final_states.contains(general_state) {
 			mut condition := OpcodeCondition.al
 			mut s_bit := false
@@ -362,6 +370,26 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			}
 
 			match general_state {
+				8 {
+					rm = tokens_list[current_token].token_value as u8
+					current_token += 1
+					println('Rm ${rm}')
+					shift_type := tokens_list[current_token].token_value as ShiftType
+					current_token += 1
+					rs := tokens_list[current_token].token_value as u8
+					return ADCOpcode{
+						condition: condition
+						rd: rd
+						rn: rn
+						s_bit: s_bit
+						shift_operand: ShiftOperandRegister{
+							rm: rm
+							register_shift: true
+							shift_type: shift_type
+							shift_value: rs
+						}
+					}
+				}
 				9 {
 					rm = tokens_list[current_token].token_value as u8
 					current_token += 1
@@ -381,7 +409,6 @@ fn opcode_from_string(opcode_text string) !Opcode {
 							shift_value: expression
 						}
 					}
-
 				}
 				10 {
 					// In final state 10 we are parsing an RXX which

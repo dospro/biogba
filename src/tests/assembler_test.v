@@ -303,7 +303,31 @@ fn test_assembler_adc_register_mode_rxx() {
 	}
 }
 
-// Test register-register mode
+/*
+Test register-register mode.
+*/
+fn test_assembler_adc_register_mode_register() {
+	opcode_string := 'ADC R0, R1, R2, LSL R3'
+
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.al
+		rd: 0
+		rn: 1
+		s_bit: false
+		shift_operand: biogba.ShiftOperandRegister {
+			rm: 0x2
+			register_shift: true
+			shift_type: biogba.ShiftType.lsl
+			shift_value: 3
+		}
+	}
+
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
 
 // Errors
 // Test bad expression in immediate
