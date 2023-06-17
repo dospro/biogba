@@ -14,8 +14,8 @@ fn test_assembler_adc_simple() {
 		rn: 0x3
 		s_bit: false
 		shift_operand: biogba.ShiftOperandImmediate {
-			value: 0x10
-			rotate: 0
+			value: 1
+			rotate: 14
 		}
 	}
 
@@ -39,8 +39,8 @@ fn test_assemblder_adc_condition() {
 		rn: 0x3
 		s_bit: false
 		shift_operand: biogba.ShiftOperandImmediate {
-			value: 0x10
-			rotate: 0
+			value: 1
+			rotate: 14
 		}
 	}
 
@@ -64,8 +64,8 @@ fn test_assembler_adc_rd() {
 		rn: 0x3
 		s_bit: false
 		shift_operand: biogba.ShiftOperandImmediate {
-			value: 0x10
-			rotate: 0
+			value: 1
+			rotate: 14
 		}
 	}
 
@@ -89,8 +89,8 @@ fn test_assembler_adc_rn() {
 		rn: 0xd
 		s_bit: false
 		shift_operand: biogba.ShiftOperandImmediate {
-			value: 0x10
-			rotate: 0
+			value: 1
+			rotate: 14
 		}
 	}
 
@@ -328,6 +328,65 @@ fn test_assembler_adc_register_mode_register() {
 		assert opcode  == expected_opcode
 	}
 }
+
+/* 
+The following tests validate how the assembler generates a pair of value/rotation
+values when immediate is used.
+
+Not all values in the expression can be represented by this fields, but the algorithm should
+be able to handle all valid cases correctly.
+
+The following set of tests will validate the main cases
+*/
+
+/* 
+Test simple whole byte shift. The value fits perfectly into a byte
+*/
+fn test_assemblder_adc_immediate_generation_whole_byte() {
+	opcode_string := 'ADC R5, R3, #FF00'
+
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.al
+		rd: 0x5
+		rn: 0x3
+		s_bit: false
+		shift_operand: biogba.ShiftOperandImmediate {
+			value: 0xFF
+			rotate: 12
+		}
+	}
+
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
+
+/* 
+Test simple half byte shift. The value is shifted 4 bits
+*/
+fn test_assemblder_adc_immediate_generation_half_byte() {
+	opcode_string := 'ADC R5, R3, #FF0'
+
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.al
+		rd: 0x5
+		rn: 0x3
+		s_bit: false
+		shift_operand: biogba.ShiftOperandImmediate {
+			value: 0xFF
+			rotate: 14
+		}
+	}
+
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
+
 
 // Errors
 // Test bad expression in immediate

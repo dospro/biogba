@@ -66,7 +66,7 @@ fn register_number_from_string(register_string string) !u8 {
 	}
 }
 
-type TokenValue = string | u8 | bool | OpcodeCondition | ShiftType
+type TokenValue = string | u8 | u32 | bool | OpcodeCondition | ShiftType
 
 enum TokenType {
 	opcode_name
@@ -285,7 +285,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					println('Expression ${tokens[3]}')
 					general_state = 11
 					real_token = OpcodeToken{
-						token_value: u8(tokens[3][1..].parse_uint(16, 8)!)
+						token_value: u32(tokens[3][1..].parse_uint(16, 32)!)
 						token_type: TokenType.expression
 					}
 				}
@@ -339,7 +339,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			mut rd := u8(0x0)
 			mut rn := u8(0x0)
 			mut rm := u8(0x0)
-			mut immediate_value := u8(0x0)
+			mut immediate_value := u32(0x0)
 
 			mut current_token := 1
 			if tokens_list[current_token].token_type == TokenType.condition {
@@ -431,20 +431,18 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				}
 				11 {
 					if tokens_list[current_token].token_type == TokenType.expression {
-						immediate_value = tokens_list[current_token].token_value as u8
+						immediate_value = tokens_list[current_token].token_value as u32
 						println('Immediate value ${immediate_value}')
 					} else {
 						return error('Invalid expression ${tokens_list[current_token].token_value}')
 					}
+					shift_operand := get_immediate_value(immediate_value)!
 					return ADCOpcode{
 						condition: condition
 						rd: rd
 						rn: rn
 						s_bit: s_bit
-						shift_operand: ShiftOperandImmediate{
-							value: immediate_value
-							rotate: 0
-						}
+						shift_operand: shift_operand
 					}
 				} else {
 					return error('Not implemented')
@@ -454,4 +452,35 @@ fn opcode_from_string(opcode_text string) !Opcode {
 	}
 
 	return error('Invalid opcode')
+}
+
+/*
+From a 32 bits value generates a value/rotation pair that represents 
+the value given in the parameter.
+Returns a ShiftOperandImmediate struct with the values
+*/
+fn get_immediate_value(immediate u32) !ShiftOperandImmediate {
+	mut immediate_value := immediate
+	mut shift_counter := 0
+
+	for (immediate_value & 1) == 0 {
+		immediate_value >>= 1
+		shift_counter += 1
+	}
+
+	// If the number of shifts is odd, make it even
+	if (shift_counter & 1) == 1 {
+		immediate_value <<= 1
+		shift_counter -= 1
+	}
+	
+	if immediate_value > 0xFF {
+		return error('Value ${immediate} cannot be represented as immediate value')
+	}
+
+	return ShiftOperandImmediate {
+		value: u8(immediate_value)
+		rotate: u8(((32 - shift_counter) / 2) & 0xF)
+	}
+
 }
