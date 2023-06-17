@@ -252,7 +252,7 @@ fn test_assembler_adc_register_mode_asr() {
 
 /*
 Test Register Mode with a different expression
-Expression has a 5 bits with. 0x1F
+Expression has a 5 bits width. 0x1F
 */
 fn test_assembler_adc_register_mode_expression() {
 	opcode_string := 'ADC R0, R1, R2, LSR, #1F'
@@ -280,28 +280,28 @@ fn test_assembler_adc_register_mode_expression() {
 /*
 Test RXX shift type. Opcode should be interpreted as ROR 0
 */
-// fn test_assembler_adc_register_mode_rxx() {
-// 	opcode_string := 'ADC R0, R1, R2, RXX'
+fn test_assembler_adc_register_mode_rxx() {
+	opcode_string := 'ADC R0, R1, R2, RXX'
 
-// 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
-// 	expected_opcode := biogba.ADCOpcode {
-// 		condition: biogba.OpcodeCondition.al
-// 		rd: 0
-// 		rn: 1
-// 		s_bit: false
-// 		shift_operand: biogba.ShiftOperandRegister {
-// 			rm: 0x2
-// 			register_shift: false
-// 			shift_type: biogba.ShiftType.ror
-// 			shift_value: 0
-// 		}
-// 	}
+	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.ADCOpcode {
+		condition: biogba.OpcodeCondition.al
+		rd: 0
+		rn: 1
+		s_bit: false
+		shift_operand: biogba.ShiftOperandRegister {
+			rm: 0x2
+			register_shift: false
+			shift_type: biogba.ShiftType.ror
+			shift_value: 0
+		}
+	}
 
-// 	assert opcode is biogba.ADCOpcode
-// 	if opcode is biogba.ADCOpcode {
-// 		assert opcode  == expected_opcode
-// 	}
-// }
+	assert opcode is biogba.ADCOpcode
+	if opcode is biogba.ADCOpcode {
+		assert opcode  == expected_opcode
+	}
+}
 
 // Test register-register mode
 
@@ -309,4 +309,4 @@ Test RXX shift type. Opcode should be interpreted as ROR 0
 // Test bad expression in immediate
 // Test bad register?
 // Test mal formed opcode
-// Register-register expression can only take values 0-31
+// Register-immediate expression can only take values 0-31

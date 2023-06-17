@@ -293,11 +293,19 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			6 {
 				// After a 3th register we are now in register mode.
 				// So we either hace RXX or shiftname
-				general_state = 7
 				println('Shift Name ${tokens[4]}')
-				real_token = OpcodeToken{
-					token_value: shift_type_from_string(tokens[4])!
-					token_type: TokenType.shift_name
+				if tokens[4].to_lower() == 'rxx' {
+					general_state = 10
+					real_token = OpcodeToken{
+						token_value: shift_type_from_string('ror')!
+						token_type: TokenType.shift_name
+					}
+				} else {
+					general_state = 7
+					real_token = OpcodeToken{
+						token_value: shift_type_from_string(tokens[4])!
+						token_type: TokenType.shift_name
+					}
 				}
 			}
 			7 {
@@ -316,7 +324,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			}
 		}
 		tokens_list << real_token
-		final_states := [9, 11]
+		final_states := [9, 10, 11]
 		if final_states.contains(general_state) {
 			mut condition := OpcodeCondition.al
 			mut s_bit := false
@@ -374,6 +382,25 @@ fn opcode_from_string(opcode_text string) !Opcode {
 						}
 					}
 
+				}
+				10 {
+					// In final state 10 we are parsing an RXX which
+					// is build as a ROR #0
+					rm = tokens_list[current_token].token_value as u8
+					current_token += 1
+					println('Rm ${rm}')
+					return ADCOpcode{
+						condition: condition
+						rd: rd
+						rn: rn
+						s_bit: s_bit
+						shift_operand: ShiftOperandRegister{
+							rm: rm
+							register_shift: false
+							shift_type: ShiftType.ror
+							shift_value: 0
+						}
+					}
 				}
 				11 {
 					if tokens_list[current_token].token_type == TokenType.expression {
