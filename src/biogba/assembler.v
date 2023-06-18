@@ -32,7 +32,7 @@ fn shift_type_from_string(value string) !ShiftType {
 		'asr' {.asr}
 		'ror' {.ror}
 		else {
-			error('Invalid opcode shift operand string $value')
+			error('Invalid opcode shift operand string ${value}')
 		}
 	}
 }
@@ -66,7 +66,7 @@ fn register_number_from_string(register_string string) !u8 {
 	}
 }
 
-type TokenValue = string | u8 | u32 | bool | OpcodeCondition | ShiftType
+type TokenValue = OpcodeCondition | ShiftType | bool | string | u32 | u8
 
 enum TokenType {
 	opcode_name
@@ -85,7 +85,7 @@ pub struct OpcodeToken {
 pub struct OpcodeNameParser {
 	opcode_string      string
 	name_final_states  []int = [3, 4, 5]
-	transitions_matrix map[int]map[string]int   = {
+	transitions_matrix map[int]map[string]int = {
 		0: {
 			'A': 1
 			'B': 5
@@ -215,7 +215,9 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					else {
 						general_state = 2
 						real_token = OpcodeToken{
-							token_value: condition_from_string(token or {''}) or {OpcodeCondition.al}
+							token_value: condition_from_string(token or { '' }) or {
+								OpcodeCondition.al
+							}
 							token_type: TokenType.condition
 						}
 					}
@@ -283,6 +285,9 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				} else {
 					// Otherwise, it is an expression
 					println('Expression ${tokens[3]}')
+					if tokens.len > 4 {
+						return error('Too many parameters')
+					}
 					general_state = 11
 					real_token = OpcodeToken{
 						token_value: u32(tokens[3][1..].parse_uint(16, 32)!)
@@ -295,6 +300,9 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// So we either hace RXX or shiftname
 				println('Shift Name ${tokens[4]}')
 				if tokens[4].to_lower() == 'rxx' {
+					if tokens.len > 5 {
+						return error('Too many parameters')
+					}
 					general_state = 10
 					real_token = OpcodeToken{
 						token_value: shift_type_from_string('ror')!
@@ -314,12 +322,18 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				// 2. Register
 				println('Expression ${tokens[5]}')
 				if tokens[5].substr(0, 1).to_lower() == 'r' {
+					if tokens.len > 6 {
+						return error('Too many parameters')
+					}
 					general_state = 8
 					real_token = OpcodeToken{
 						token_value: register_number_from_string(tokens[5])!
 						token_type: TokenType.register
 					}
 				} else {
+					if tokens.len > 6 {
+						return error('Too many parameters')
+					}
 					general_state = 9
 					real_token = OpcodeToken{
 						token_value: u8(tokens[5][1..].parse_uint(16, 8)!)
@@ -397,6 +411,9 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					shift_type := tokens_list[current_token].token_value as ShiftType
 					current_token += 1
 					expression := tokens_list[current_token].token_value as u8
+					if expression > 0x1F {
+						return error('Shift expression too big')
+					}
 					return ADCOpcode{
 						condition: condition
 						rd: rd
@@ -444,18 +461,19 @@ fn opcode_from_string(opcode_text string) !Opcode {
 						s_bit: s_bit
 						shift_operand: shift_operand
 					}
-				} else {
+				}
+				else {
 					return error('Not implemented')
 				}
-			}	
-		}		
+			}
+		}
 	}
 
 	return error('Invalid opcode')
 }
 
 /*
-From a 32 bits value generates a value/rotation pair that represents 
+From a 32 bits value generates a value/rotation pair that represents
 the value given in the parameter.
 Returns a ShiftOperandImmediate struct with the values
 */
@@ -473,14 +491,13 @@ fn get_immediate_value(immediate u32) !ShiftOperandImmediate {
 		immediate_value <<= 1
 		shift_counter -= 1
 	}
-	
+
 	if immediate_value > 0xFF {
 		return error('Value ${immediate} cannot be represented as immediate value')
 	}
 
-	return ShiftOperandImmediate {
+	return ShiftOperandImmediate{
 		value: u8(immediate_value)
 		rotate: u8(((32 - shift_counter) / 2) & 0xF)
 	}
-
 }
