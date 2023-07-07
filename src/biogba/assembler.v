@@ -391,16 +391,34 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					shift_type := tokens_list[current_token].token_value as ShiftType
 					current_token += 1
 					rs := tokens_list[current_token].token_value as u8
-					return ADCOpcode{
-						condition: condition
-						rd: rd
-						rn: rn
-						s_bit: s_bit
-						shift_operand: ShiftOperandRegister{
-							rm: rm
-							register_shift: true
-							shift_type: shift_type
-							shift_value: rs
+
+					opcode_name := tokens_list[0].token_value as string
+
+					if opcode_name == 'ADD' {
+						return ADDOpcode{
+							condition: condition
+							rd: rd
+							rn: rn
+							s_bit: s_bit
+							shift_operand: ShiftOperandRegister{
+								rm: rm
+								register_shift: true
+								shift_type: shift_type
+								shift_value: rs
+							}
+						}
+					} else {
+						return ADCOpcode{
+							condition: condition
+							rd: rd
+							rn: rn
+							s_bit: s_bit
+							shift_operand: ShiftOperandRegister{
+								rm: rm
+								register_shift: true
+								shift_type: shift_type
+								shift_value: rs
+							}
 						}
 					}
 				}
