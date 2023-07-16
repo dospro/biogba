@@ -2,35 +2,6 @@ module biogba
 
 import regex
 
-/*
-Returns the register number from a register string
-Example
-R15 -> 0xF
-*/
-fn register_number_from_string(register_string string) !u8 {
-	return match register_string.to_lower() {
-		'r0' {0x0}
-		'r1' {0x1}
-		'r2' {0x2}
-		'r3' {0x3}
-		'r4' {0x4}
-		'r5' {0x5}
-		'r6' {0x6}
-		'r7' {0x7}
-		'r8' {0x8}
-		'r9' {0x9}
-		'r10' {0xA}
-		'r11' {0xB}
-		'r12' {0xC}
-		'r13' {0xD}
-		'r14' {0xE}
-		'r15' {0xF}
-		else {
-			error('Invalid register ${register_string}')
-		}
-	}
-}
-
 type TokenValue = OpcodeCondition | ShiftType | bool | string | u32 | u8
 
 enum TokenType {
@@ -155,9 +126,9 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			if !iter.opcode_name_parts['cond'].is_blank() {
 				iter.state = 2
 				return OpcodeToken{
-					token_value: OpcodeCondition.from_string(iter.opcode_name_parts['cond'] or { '' }) or {
-						OpcodeCondition.al
-					}
+					token_value: OpcodeCondition.from_string(iter.opcode_name_parts['cond'] or {
+						''
+					}) or { OpcodeCondition.al }
 					token_type: TokenType.condition
 				}
 			} else if !iter.opcode_name_parts['S'].is_blank() {
@@ -169,7 +140,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			} else {
 				iter.state = 4
 				return OpcodeToken{
-					token_value: register_number_from_string(iter.fields[1]) or {
+					token_value: Register.from_string(iter.fields[1]) or {
 						iter.errors << err
 						return none
 					}
@@ -191,7 +162,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			} else {
 				iter.state = 4
 				return OpcodeToken{
-					token_value: register_number_from_string(iter.fields[1]) or {
+					token_value: Register.from_string(iter.fields[1]) or {
 						iter.errors << err
 						return none
 					}
@@ -203,7 +174,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			// After an S flag we can only have a register
 			iter.state = 4
 			return OpcodeToken{
-				token_value: register_number_from_string(iter.fields[1]) or {
+				token_value: Register.from_string(iter.fields[1]) or {
 					iter.errors << err
 					return none
 				}
@@ -214,7 +185,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			// After the first register we can only have a second register
 			iter.state = 5
 			return OpcodeToken{
-				token_value: register_number_from_string(iter.fields[2]) or {
+				token_value: Register.from_string(iter.fields[2]) or {
 					iter.errors << err
 					return none
 				}
@@ -230,7 +201,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			if iter.fields[3].substr(0, 1) == 'R' {
 				iter.state = 6
 				return OpcodeToken{
-					token_value: register_number_from_string(iter.fields[3]) or {
+					token_value: Register.from_string(iter.fields[3]) or {
 						iter.errors << err
 						return none
 					}
@@ -291,7 +262,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 				iter.state = 8
 				return OpcodeToken{
-					token_value: register_number_from_string(iter.fields[5]) or {
+					token_value: Register.from_string(iter.fields[5]) or {
 						iter.errors << err
 						return none
 					}
