@@ -84,6 +84,23 @@ pub struct OpcodeToken {
 	token_type  TokenType
 }
 
+enum ArithmeticOpcodeFinalState {
+	immediate = 11
+	register_immediate = 9
+	register_register = 8
+	rrx = 10
+}
+
+fn ArithmeticOpcodeFinalState.from_int(value int) !ArithmeticOpcodeFinalState {
+	return match value {
+		8 {.register_register}
+		9 {.register_immediate}
+		10 {.rrx}
+		11 {.immediate}
+		else {error('Unknown final state')}
+	}
+}
+
 
 /*
 Builds a regex query that recognizes the opcode name format.
@@ -276,8 +293,8 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 		}
 		6 {
 			// After a 3th register we are now in register mode.
-			// So we either hace RXX or shiftname
-			if iter.fields[4].to_lower() == 'rxx' {
+			// So we either hace RRX or shiftname
+			if iter.fields[4].to_lower() == 'rrx' {
 				if iter.fields.len > 5 {
 					iter.errors << error('Too many parameters')
 					return none
@@ -376,6 +393,108 @@ fn tokens_from_string(opcode_text string) !TokensList {
 	}
 }
 
+// immediate
+// register-immediate
+// register-register
+// rrx
+
+fn build_arithmetic_immediate(name string, fields ArithmeticOpcode) !Opcode {
+	match name {
+		'ADC' {
+			return ADCOpcode{
+				condition: fields.condition
+				shift_operand: fields.shift_operand
+				rn: fields.rn
+				rd: fields.rd
+				s_bit: fields.s_bit
+			}
+		}
+		'ADD' {
+			return ADDOpcode{
+				condition: fields.condition
+				shift_operand: fields.shift_operand
+				rn: fields.rn
+				rd: fields.rd
+				s_bit: fields.s_bit
+			}
+		}
+		'AND' {
+			return ANDOpcode {
+				condition: fields.condition
+				shift_operand: fields.shift_operand
+				rn: fields.rn
+				rd: fields.rd
+				s_bit: fields.s_bit
+			}
+		}
+		else {
+			return error('Arithmetic Opcode ${name} not implemented')
+		}
+	}
+}
+
+fn build_arithmetic_register_immediate(name string, fields ArithmeticOpcode) !Opcode {
+	match name {
+		'ADC' {
+			return ADCOpcode{
+				condition: fields.condition
+				shift_operand: fields.shift_operand
+				rn: fields.rn
+				rd: fields.rd
+				s_bit: fields.s_bit
+			}
+		}
+		'ADD' {
+			return ADDOpcode{
+				condition: fields.condition
+				shift_operand: fields.shift_operand
+				rn: fields.rn
+				rd: fields.rd
+				s_bit: fields.s_bit
+			}
+		}
+		'AND' {
+			return ANDOpcode {
+				condition: fields.condition
+				shift_operand: fields.shift_operand
+				rn: fields.rn
+				rd: fields.rd
+				s_bit: fields.s_bit
+			}
+		}
+		else {
+			return error('Arithmetic Opcode ${name} not implemented')
+		}
+	}
+}
+
+fn build_opcode_object(name string, fields ArithmeticOpcode) !Opcode{
+	match name {
+		'ADC' {
+			return ADCOpcode{
+				condition: fields.condition
+				shift_operand: fields.shift_operand
+				rn: fields.rn
+				rd: fields.rd
+				s_bit: fields.s_bit
+			}
+		}
+		'ADD' {
+			return ADDOpcode{
+				condition: fields.condition
+				shift_operand: fields.shift_operand
+				rn: fields.rn
+				rd: fields.rd
+				s_bit: fields.s_bit
+			}
+		}
+		else {
+			return error('Not implemented opcode')
+		}
+	}
+}
+
+
 /*
 Returns a Result type with either an Opcode struct from a string
 representation or an error in case something goes wrong
@@ -420,8 +539,10 @@ fn opcode_from_string(opcode_text string) !Opcode {
 		error('Expected register Rn')
 	}
 
-	match general_state {
-		8 {
+	state_name := ArithmeticOpcodeFinalState.from_int(general_state)!
+
+	match state_name {
+		.register_register {
 			rm = tokens_list[current_token].token_value as u8
 			current_token += 1
 			println('Rm ${rm}')
@@ -431,35 +552,20 @@ fn opcode_from_string(opcode_text string) !Opcode {
 
 			opcode_name := tokens_list[0].token_value as string
 
-			if opcode_name == 'ADD' {
-				return ADDOpcode{
-					condition: condition
-					rd: rd
-					rn: rn
-					s_bit: s_bit
-					shift_operand: ShiftOperandRegister{
-						rm: rm
-						register_shift: true
-						shift_type: shift_type
-						shift_value: rs
-					}
+			return build_opcode_object(opcode_name, ArithmeticOpcode{
+				condition: condition
+				rd: rd
+				rn: rn
+				s_bit: s_bit
+				shift_operand: ShiftOperandRegister{
+					rm: rm
+					register_shift: true
+					shift_type: shift_type
+					shift_value: rs
 				}
-			} else {
-				return ADCOpcode{
-					condition: condition
-					rd: rd
-					rn: rn
-					s_bit: s_bit
-					shift_operand: ShiftOperandRegister{
-						rm: rm
-						register_shift: true
-						shift_type: shift_type
-						shift_value: rs
-					}
-				}
-			}
+			})!
 		}
-		9 {
+		.register_immediate {
 			rm = tokens_list[current_token].token_value as u8
 			current_token += 1
 			println('Rm ${rm}')
@@ -469,7 +575,8 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			if expression > 0x1F {
 				return error('Shift expression too big')
 			}
-			return ADCOpcode{
+			opcode_name := tokens_list[0].token_value as string
+			return build_arithmetic_register_immediate(opcode_name, ArithmeticOpcode {
 				condition: condition
 				rd: rd
 				rn: rn
@@ -480,15 +587,16 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					shift_type: shift_type
 					shift_value: expression
 				}
-			}
+			})!
 		}
-		10 {
-			// In final state 10 we are parsing an RXX which
+		.rrx {
+			// In final state 10 we are parsing an RRX which
 			// is build as a ROR #0
 			rm = tokens_list[current_token].token_value as u8
 			current_token += 1
 			println('Rm ${rm}')
-			return ADCOpcode{
+			opcode_name := tokens_list[0].token_value as string
+			return build_opcode_object(opcode_name, ArithmeticOpcode{
 				condition: condition
 				rd: rd
 				rn: rn
@@ -499,9 +607,9 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					shift_type: ShiftType.ror
 					shift_value: 0
 				}
-			}
+			})!
 		}
-		11 {
+		.immediate { // Immediate
 			if tokens_list[current_token].token_type == TokenType.expression {
 				immediate_value = tokens_list[current_token].token_value as u32
 				println('Immediate value ${immediate_value}')
@@ -510,34 +618,13 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			}
 			shift_operand := get_immediate_value(immediate_value)!
 			opcode_name := tokens_list[0].token_value as string
-			if opcode_name == 'ADC' {
-				return ADCOpcode{
-					condition: condition
-					rd: rd
-					rn: rn
-					s_bit: s_bit
-					shift_operand: shift_operand
-				}
-			} else if opcode_name == 'ADD' {
-				return ADDOpcode{
-					condition: condition
-					rd: rd
-					rn: rn
-					s_bit: s_bit
-					shift_operand: shift_operand
-				}
-			} else if opcode_name == 'AND' {
-				return ANDOpcode{
-					condition: condition
-					rd: rd
-					rn: rn
-					s_bit: s_bit
-					shift_operand: shift_operand
-				}
-			}
-		}
-		else {
-			return error('Not implemented')
+			return build_arithmetic_immediate(opcode_name, ArithmeticOpcode{
+				condition: condition
+				shift_operand: shift_operand
+				rn: rn
+				rd: rd
+				s_bit: s_bit
+			})
 		}
 	}
 

@@ -275,10 +275,10 @@ fn test_assembler_adc_register_mode_expression() {
 }
 
 /*
-Test RXX shift type. Opcode should be interpreted as ROR 0
+Test RRX shift type. Opcode should be interpreted as ROR 0
 */
 fn test_assembler_adc_register_mode_rxx() {
-	opcode_string := 'ADC R0, R1, R2, RXX'
+	opcode_string := 'ADC R0, R1, R2, RRX'
 
 	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADCOpcode{
