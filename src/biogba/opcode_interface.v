@@ -19,66 +19,6 @@ pub enum Register {
 	r15
 }
 
-pub enum OpcodeCondition {
-	eq
-	ne
-	cs
-	cc
-	mi
-	pl
-	vs
-	vc
-	hi
-	ls
-	ge
-	lt
-	gt
-	le
-	al
-}
-
-fn opcode_condition_from_value(value u32) ?OpcodeCondition {
-	return match value {
-		0 {.eq}
-		1 {.ne}
-		2 {.cs}
-		3 {.cc}
-		4 {.mi}
-		5 {.pl}
-		6 {.vs}
-		7 {.vc}
-		8 {.hi}
-		9 {.ls}
-		0xA {.ge}
-		0xB {.lt}
-		0xC {.gt}
-		0xD {.le}
-		0xE {.al}
-		else {
-			error('Unkown opcode condition for value $value')
-		}
-	}
-}
-
-pub enum ShiftType {
-	lsl
-	lsr
-	asr
-	ror
-}
-
-fn shift_type_from_value(value u32) !ShiftType {
-	return match value {
-		0 {.lsl}
-		1 {.lsr}
-		2 {.asr}
-		3 {.ror}
-		else {
-			error('Unkown opcode shift oeprand type for value $value')
-		}
-	}
-}
-
 type ShiftOperand = ShiftOperandImmediate | ShiftOperandRegister
 
 pub struct ShiftOperandImmediate {
@@ -117,12 +57,12 @@ pub interface Opcode {
 }
 
 pub struct ArithmeticOpcode {
-	pub:
-		condition     OpcodeCondition = OpcodeCondition.al
-		shift_operand ShiftOperand    = ShiftOperandImmediate{}
-		rn            u8
-		rd            u8
-		s_bit         bool
+pub:
+	condition     OpcodeCondition = OpcodeCondition.al
+	shift_operand ShiftOperand    = ShiftOperandImmediate{}
+	rn            u8
+	rd            u8
+	s_bit         bool
 }
 
 pub fn (opcode ArithmeticOpcode) get_opcode_part() u32 {
@@ -192,8 +132,8 @@ pub fn (opcode BICOpcode) as_hex() u32 {
 }
 
 pub struct BXOpcode {
-	condition OpcodeCondition=OpcodeCondition.al
-	rm u8
+	condition OpcodeCondition = OpcodeCondition.al
+	rm        u8
 }
 
 pub fn (opcode BXOpcode) as_hex() u32 {
@@ -210,7 +150,7 @@ pub struct CMNOpcode {
 pub fn (opcode CMNOpcode) as_hex() u32 {
 	opcode_part := u32(0x170_0000)
 	if !opcode.s_bit {
-		panic("CMN Opcode always has S bit set")
+		panic('CMN Opcode always has S bit set')
 	}
 	return opcode_part | opcode.ArithmeticOpcode.as_hex()
 }
@@ -223,7 +163,7 @@ pub struct CMPOpcode {
 pub fn (opcode CMPOpcode) as_hex() u32 {
 	opcode_part := u32(0x150_0000)
 	if !opcode.s_bit {
-		panic("CMP Opcode always has S bit set")
+		panic('CMP Opcode always has S bit set')
 	}
 	return opcode_part | opcode.ArithmeticOpcode.as_hex()
 }
@@ -238,11 +178,11 @@ pub fn (opcode EOROpcode) as_hex() u32 {
 }
 
 pub struct LDMOpcode {
-	condition OpcodeCondition = OpcodeCondition.al
-	rn u8
-	p_bit bool
-	u_bit bool
-	w_bit bool
+	condition     OpcodeCondition = OpcodeCondition.al
+	rn            u8
+	p_bit         bool
+	u_bit         bool
+	w_bit         bool
 	register_list []Register
 }
 
@@ -261,28 +201,27 @@ pub fn (opcode LDMOpcode) as_hex() u32 {
 }
 
 pub struct RegisterOffset {
-	rm u8
-	shift_type ShiftType
+	rm          u8
+	shift_type  ShiftType
 	shift_value u8
 }
 
 pub fn (self RegisterOffset) as_hex() u32 {
-	return (u32(self.shift_value) << 7) | (u32(self.shift_type) << 5 ) | u32(self.rm)
+	return (u32(self.shift_value) << 7) | (u32(self.shift_type) << 5) | u32(self.rm)
 }
 
-type Offset = u16 | RegisterOffset
+type Offset = RegisterOffset | u16
 
 pub struct LDROpcode {
 	condition OpcodeCondition = OpcodeCondition.al
-	rn u8
-	rd u8
-	p_bit bool
-	u_bit bool
-	b_bit bool
-	w_bit bool
-	address Offset
+	rn        u8
+	rd        u8
+	p_bit     bool
+	u_bit     bool
+	b_bit     bool
+	w_bit     bool
+	address   Offset
 }
-
 
 pub fn (opcode LDROpcode) as_hex() u32 {
 	opcode_part := u32(0x0400_0000)
@@ -294,8 +233,8 @@ pub fn (opcode LDROpcode) as_hex() u32 {
 	b_part := if opcode.b_bit { u32(0x40_0000) } else { u32(0) }
 	w_part := if opcode.w_bit { u32(0x20_0000) } else { u32(0) }
 	address_part := match opcode.address {
-		u16 {u32(opcode.address)}
-		RegisterOffset {opcode.address.as_hex() | 0x200_0000}
+		u16 { u32(opcode.address) }
+		RegisterOffset { opcode.address.as_hex() | 0x200_0000 }
 	}
 	return opcode_part | condition_part | rn_part | rd_part | p_part | u_part | b_part | w_part | address_part
 }

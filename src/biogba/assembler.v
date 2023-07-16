@@ -2,43 +2,6 @@ module biogba
 
 import regex
 
-// Parses a string into a OpcodeCondition
-fn condition_from_string(condition_string string) ?OpcodeCondition {
-	return match condition_string.to_lower() {
-		'eq' { OpcodeCondition.eq }
-		'ne' { OpcodeCondition.ne }
-		'cs' { OpcodeCondition.cs }
-		'cc' { OpcodeCondition.cc }
-		'mi' { OpcodeCondition.mi }
-		'pl' { OpcodeCondition.pl }
-		'vs' { OpcodeCondition.vs }
-		'vc' { OpcodeCondition.vc }
-		'hi' { OpcodeCondition.hi }
-		'ls' { OpcodeCondition.ls }
-		'ge' { OpcodeCondition.ge }
-		'lt' { OpcodeCondition.lt }
-		'gt' { OpcodeCondition.gt }
-		'le' { OpcodeCondition.le }
-		'al' { OpcodeCondition.al }
-		else { none }
-	}
-}
-
-/*
-Returns a ShiftType value from a string
-*/
-fn shift_type_from_string(value string) !ShiftType {
-	return match value.to_lower() {
-		'lsl' {.lsl}
-		'lsr' {.lsr}
-		'asr' {.asr}
-		'ror' {.ror}
-		else {
-			error('Invalid opcode shift operand string ${value}')
-		}
-	}
-}
-
 /*
 Returns the register number from a register string
 Example
@@ -93,14 +56,13 @@ enum ArithmeticOpcodeFinalState {
 
 fn ArithmeticOpcodeFinalState.from_int(value int) !ArithmeticOpcodeFinalState {
 	return match value {
-		8 {.register_register}
-		9 {.register_immediate}
-		10 {.rrx}
-		11 {.immediate}
-		else {error('Unknown final state')}
+		8 { .register_register }
+		9 { .register_immediate }
+		10 { .rrx }
+		11 { .immediate }
+		else { error('Unknown final state') }
 	}
 }
-
 
 /*
 Builds a regex query that recognizes the opcode name format.
@@ -109,7 +71,7 @@ The opcode name format can be represented as:
 {opcode_name}{<condition>}{<S>}
 
 The function uses a list of all possible names and conditions to build a long regex
- */
+*/
 fn build_opcode_name_regex() string {
 	opcode_names := ['ADC', 'ADD', 'AND', 'BL', 'B']
 	conditions := ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT', 'GT',
@@ -136,7 +98,7 @@ and returns a map with the parts of the opcode:
     cond
     S
 }
- */
+*/
 fn get_parts(text string) !map[string]string {
 	query := build_opcode_name_regex()
 	mut re := regex.regex_opt(query)!
@@ -159,7 +121,7 @@ mut:
 	state             int
 }
 
-fn new_opcode_parser(opcode_text string) !OpcodeParser {
+fn OpcodeParser.new(opcode_text string) !OpcodeParser {
 	// Remove commas
 	cleaned_opcode_text := opcode_text.replace(',', ' ')
 
@@ -193,7 +155,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			if !iter.opcode_name_parts['cond'].is_blank() {
 				iter.state = 2
 				return OpcodeToken{
-					token_value: condition_from_string(iter.opcode_name_parts['cond'] or { '' }) or {
+					token_value: OpcodeCondition.from_string(iter.opcode_name_parts['cond'] or { '' }) or {
 						OpcodeCondition.al
 					}
 					token_type: TokenType.condition
@@ -301,7 +263,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 				iter.state = 10
 				return OpcodeToken{
-					token_value: shift_type_from_string('ror') or {
+					token_value: ShiftType.from_string('ror') or {
 						iter.errors << err
 						return none
 					}
@@ -310,7 +272,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			} else {
 				iter.state = 7
 				return OpcodeToken{
-					token_value: shift_type_from_string(iter.fields[4]) or {
+					token_value: ShiftType.from_string(iter.fields[4]) or {
 						iter.errors << err
 						return none
 					}
@@ -376,7 +338,7 @@ TokensList struct with the final state (which identifies the actual opcode)
 together with the list of validated tokens that builds the opcode.
 */
 fn tokens_from_string(opcode_text string) !TokensList {
-	mut opcode_parser := new_opcode_parser(opcode_text)!
+	mut opcode_parser := OpcodeParser.new(opcode_text)!
 	mut tokens_list := []OpcodeToken{}
 
 	for {
@@ -419,7 +381,7 @@ fn build_arithmetic_immediate(name string, fields ArithmeticOpcode) !Opcode {
 			}
 		}
 		'AND' {
-			return ANDOpcode {
+			return ANDOpcode{
 				condition: fields.condition
 				shift_operand: fields.shift_operand
 				rn: fields.rn
@@ -454,7 +416,7 @@ fn build_arithmetic_register_immediate(name string, fields ArithmeticOpcode) !Op
 			}
 		}
 		'AND' {
-			return ANDOpcode {
+			return ANDOpcode{
 				condition: fields.condition
 				shift_operand: fields.shift_operand
 				rn: fields.rn
@@ -468,7 +430,7 @@ fn build_arithmetic_register_immediate(name string, fields ArithmeticOpcode) !Op
 	}
 }
 
-fn build_opcode_object(name string, fields ArithmeticOpcode) !Opcode{
+fn build_opcode_object(name string, fields ArithmeticOpcode) !Opcode {
 	match name {
 		'ADC' {
 			return ADCOpcode{
@@ -493,7 +455,6 @@ fn build_opcode_object(name string, fields ArithmeticOpcode) !Opcode{
 		}
 	}
 }
-
 
 /*
 Returns a Result type with either an Opcode struct from a string
@@ -576,7 +537,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				return error('Shift expression too big')
 			}
 			opcode_name := tokens_list[0].token_value as string
-			return build_arithmetic_register_immediate(opcode_name, ArithmeticOpcode {
+			return build_arithmetic_register_immediate(opcode_name, ArithmeticOpcode{
 				condition: condition
 				rd: rd
 				rn: rn

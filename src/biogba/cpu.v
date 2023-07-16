@@ -44,7 +44,7 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 
 pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 	// Conditional
-	condition := opcode_condition_from_value(opcode >> 28) or { panic(err) }
+	condition := OpcodeCondition.from_u32(opcode >> 28) or { panic(err) }
 	if !self.should_execute(condition) {
 		return
 	}
@@ -165,7 +165,7 @@ pub fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 	mut operand_value := u32(0)
 	mut c_bit := self.cpsr.c
 	if is_register_shift {
-		shift_type := shift_type_from_value((opcode >> 5) & 3) or { panic('') }
+		shift_type := ShiftType.from_u32((opcode >> 5) & 3) or { panic('') }
 		is_register_value := ((opcode >> 4) & 1) == 1
 		shift_value := if is_register_value {
 			self.r[(opcode >> 8) & 0xF]
@@ -275,7 +275,7 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 	if i_bit {
 		rm := self.r[opcode & 0xF]
 		shift_value := (opcode >> 7) & 0x1F
-		shift_type := shift_type_from_value((opcode >> 5) & 3) or { panic('') }
+		shift_type := ShiftType.from_u32((opcode >> 5) & 3) or { panic('') }
 		real_offset := match shift_type {
 			.lsl {
 				rm << shift_value
