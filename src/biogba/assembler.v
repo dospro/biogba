@@ -1,5 +1,7 @@
 module biogba
 
+import regex
+
 // Parses a string into a OpcodeCondition
 fn condition_from_string(condition_string string) ?OpcodeCondition {
 	return match condition_string.to_lower() {
@@ -82,84 +84,62 @@ pub struct OpcodeToken {
 	token_type  TokenType
 }
 
-pub struct OpcodeNameParser {
-	opcode_string      string
-	name_final_states  []int = [3, 4, 5]
-	transitions_matrix map[int]map[string]int = {
-		0: {
-			'A': 1
-			'B': 5
-		}
-		1: {
-			'D': 2
-		}
-		2: {
-			'C': 3
-			'D': 4
-		}
+
+/*
+Builds a regex query that recognizes the opcode name format.
+
+The opcode name format can be represented as:
+{opcode_name}{<condition>}{<S>}
+
+The function uses a list of all possible names and conditions to build a long regex
+ */
+fn build_opcode_name_regex() string {
+	opcode_names := ['ADC', 'ADD', 'AND', 'BL', 'B']
+	conditions := ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT', 'GT',
+		'LE', 'AL']
+	mut regex_string := r'^(?P<name>'
+	regex_string += '(${opcode_names[0]})'
+	for op_name in opcode_names[1..] {
+		regex_string += '|(${op_name})'
 	}
-mut:
-	index int
-	state int
-	token string
+	regex_string += ')(?P<cond>(${conditions[0]})'
+	for cond in conditions[1..] {
+		regex_string += '|(${cond})'
+	}
+	regex_string += r')?(?P<S>S)?$'
+	return regex_string
 }
 
 /*
-The next method, which makes OpcodeNameParser an Iterator, parses the first
-token of an opcode which can contain up to 3 elements:
-1. Opcode Name. Ex: ADC, B, MUL
-2. Condition. Ex: EQ, GT, AL (optional)
-3. S (optional)
-
-Syntax: {opcode_name}{<cond>}{S}
-*/
-fn (mut iter OpcodeNameParser) next() ?string {
-	if iter.index >= iter.opcode_string.len {
-		return none
-	}
-	if iter.opcode_string.is_blank() {
-		return none
-	}
-	// If we already returned opcode name, then we can stop using states
-	if iter.name_final_states.contains(iter.state) {
-		if iter.opcode_string[iter.index].ascii_str() == 'S' {
-			iter.index += 1
-			return 'S'
-		} else {
-			if iter.index + 1 >= iter.opcode_string.len {
-				return none
-			}
-			condition := iter.opcode_string[iter.index..iter.index + 2]
-			iter.index += 2
-			return condition
+Receives a string with the format
+{opcode_name}{<condition>}{<S>}
+and returns a map with the parts of the opcode:
+{
+    name
+    cond
+    S
+}
+ */
+fn get_parts(text string) !map[string]string {
+	query := build_opcode_name_regex()
+	mut re := regex.regex_opt(query)!
+	matches := re.matches_string(text)
+	mut final_map := map[string]string{}
+	if matches {
+		for name in re.group_map.keys() {
+			final_map[name] = re.get_group_by_name(text, name)
 		}
+		return final_map
 	}
-	for {
-		if iter.index >= iter.opcode_string.len {
-			break
-		}
-		next_character := iter.opcode_string[iter.index].ascii_str()
-		if next_state := iter.transitions_matrix[iter.state][next_character] {
-			iter.state = next_state
-			iter.token += next_character
-			iter.index += 1
-		} else {
-			break
-		}
-	}
-	if !iter.name_final_states.contains(iter.state) {
-		println('Break the loop but we are not in a final state ${iter.state}')
-		return none
-	}
-	return iter.token
+	return error('Unable to parse upcode name')
 }
 
 struct OpcodeParser {
 mut:
-	scanner OpcodeNameParser
-	errors  []IError
-	fields  []string
-	state   int
+	opcode_name_parts map[string]string
+	errors            []IError
+	fields            []string
+	state             int
 }
 
 fn new_opcode_parser(opcode_text string) !OpcodeParser {
@@ -168,12 +148,10 @@ fn new_opcode_parser(opcode_text string) !OpcodeParser {
 
 	// Separate tokens
 	fields := cleaned_opcode_text.fields()
-	my_scanner := OpcodeNameParser{
-		opcode_string: fields[0]
-	}
+	parts := get_parts(fields[0])!
 
 	return OpcodeParser{
-		scanner: my_scanner
+		opcode_name_parts: parts
 		fields: fields
 		state: 0
 	}
@@ -182,10 +160,7 @@ fn new_opcode_parser(opcode_text string) !OpcodeParser {
 fn (mut iter OpcodeParser) next() ?OpcodeToken {
 	match iter.state {
 		0 {
-			token := iter.scanner.next() or {
-				iter.errors << error('Invalid Opcode name')
-				return none
-			}
+			token := iter.opcode_name_parts['name']
 			iter.state = 1
 			return OpcodeToken{
 				token_value: token
@@ -198,37 +173,28 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			// 2. S flag
 			// 3. register
 
-			// If the internal scanner is out of characters, then
-			// the next token is a register and is inside the next
-			// tokens element
-			token := iter.scanner.next()
-
-			match token {
-				none {
-					iter.state = 4
-					return OpcodeToken{
-						token_value: register_number_from_string(iter.fields[1]) or {
-							iter.errors << err
-							return none
-						}
-						token_type: TokenType.register
+			if !iter.opcode_name_parts['cond'].is_blank() {
+				iter.state = 2
+				return OpcodeToken{
+					token_value: condition_from_string(iter.opcode_name_parts['cond'] or { '' }) or {
+						OpcodeCondition.al
 					}
+					token_type: TokenType.condition
 				}
-				'S' {
-					iter.state = 3
-					return OpcodeToken{
-						token_value: true
-						token_type: TokenType.s_bit
-					}
+			} else if !iter.opcode_name_parts['S'].is_blank() {
+				iter.state = 3
+				return OpcodeToken{
+					token_value: true
+					token_type: TokenType.s_bit
 				}
-				else {
-					iter.state = 2
-					return OpcodeToken{
-						token_value: condition_from_string(token or { '' }) or {
-							OpcodeCondition.al
-						}
-						token_type: TokenType.condition
+			} else {
+				iter.state = 4
+				return OpcodeToken{
+					token_value: register_number_from_string(iter.fields[1]) or {
+						iter.errors << err
+						return none
 					}
+					token_type: TokenType.register
 				}
 			}
 		}
@@ -237,32 +203,20 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			// 1. An S flag
 			// 2. A register
 
-			// If the internal scanner is our of characters, then
-			// the next token is a register and is inside the next
-			// tokens element
-			token := iter.scanner.next()
-
-			match token {
-				none {
-					iter.state = 4
-					return OpcodeToken{
-						token_value: register_number_from_string(iter.fields[1]) or {
-							iter.errors << err
-							return none
-						}
-						token_type: TokenType.register
-					}
+			if !iter.opcode_name_parts['S'].is_blank() {
+				iter.state = 3
+				return OpcodeToken{
+					token_value: true
+					token_type: TokenType.s_bit
 				}
-				'S' {
-					iter.state = 3
-					return OpcodeToken{
-						token_value: true
-						token_type: TokenType.s_bit
+			} else {
+				iter.state = 4
+				return OpcodeToken{
+					token_value: register_number_from_string(iter.fields[1]) or {
+						iter.errors << err
+						return none
 					}
-				}
-				else {
-					iter.errors << error('After opcode name there was no S, register or condition. Mal formed opcode')
-					return none
+					token_type: TokenType.register
 				}
 			}
 		}
@@ -555,12 +509,31 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				return error('Invalid expression ${tokens_list[current_token].token_value}')
 			}
 			shift_operand := get_immediate_value(immediate_value)!
-			return ADCOpcode{
-				condition: condition
-				rd: rd
-				rn: rn
-				s_bit: s_bit
-				shift_operand: shift_operand
+			opcode_name := tokens_list[0].token_value as string
+			if opcode_name == 'ADC' {
+				return ADCOpcode{
+					condition: condition
+					rd: rd
+					rn: rn
+					s_bit: s_bit
+					shift_operand: shift_operand
+				}
+			} else if opcode_name == 'ADD' {
+				return ADDOpcode{
+					condition: condition
+					rd: rd
+					rn: rn
+					s_bit: s_bit
+					shift_operand: shift_operand
+				}
+			} else if opcode_name == 'AND' {
+				return ANDOpcode{
+					condition: condition
+					rd: rd
+					rn: rn
+					s_bit: s_bit
+					shift_operand: shift_operand
+				}
 			}
 		}
 		else {
