@@ -18,19 +18,21 @@ pub struct OpcodeToken {
 	token_type  TokenType
 }
 
-enum ArithmeticOpcodeFinalState {
+enum OpcodeFinalState {
 	immediate = 11
 	register_immediate = 9
 	register_register = 8
 	rrx = 10
+	branch = 14
 }
 
-fn ArithmeticOpcodeFinalState.from_int(value int) !ArithmeticOpcodeFinalState {
+fn OpcodeFinalState.from_int(value int) !OpcodeFinalState {
 	return match value {
 		8 { .register_register }
 		9 { .register_immediate }
 		10 { .rrx }
 		11 { .immediate }
+		14 { .branch }
 		else { error('Unknown final state') }
 	}
 }
@@ -81,7 +83,7 @@ fn get_parts(text string) !map[string]string {
 		}
 		return final_map
 	}
-	return error('Unable to parse upcode name')
+	return error('Unable to parse opcode name')
 }
 
 struct OpcodeParser {
@@ -111,7 +113,13 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 	match iter.state {
 		0 {
 			token := iter.opcode_name_parts['name']
-			iter.state = 1
+			if token in ['ADC', 'ADD', 'AND'] {
+				iter.state = 1
+			} else if token in ['B', 'BL'] {
+				iter.state = 12
+			} else {
+				return none
+			}
 			return OpcodeToken{
 				token_value: token
 				token_type: TokenType.opcode_name
@@ -283,6 +291,30 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 			}
 		}
+		12 {
+			// We have a branch Opcode. So we either have
+			// condition
+			// expression
+			if !iter.opcode_name_parts['cond'].is_blank() {
+				iter.state = 13
+				return OpcodeToken{
+					token_value: OpcodeCondition.from_string(iter.opcode_name_parts['cond'] or {
+						''
+					}) or {OpcodeCondition.al}
+					token_type: TokenType.condition
+				}
+			} else {
+				expression_value := u32(iter.fields[1][1..].parse_uint(16, 32) or {
+					iter.errors << err
+					return none
+				})
+				iter.state = 14 // Final state
+				return OpcodeToken{
+					token_value: expression_value
+					token_type: .expression
+				}
+			}
+		}
 		else {
 			iter.errors << error('Invalid state in general parser')
 			return none
@@ -291,7 +323,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 }
 
 fn (self OpcodeParser) get_final_state() !int {
-	final_states := [8, 9, 10, 11]
+	final_states := [8, 9, 10, 11, 14]
 	if final_states.contains(self.state) {
 		return self.state
 	}
@@ -405,7 +437,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 		error('Expected register Rn')
 	}
 
-	state_name := ArithmeticOpcodeFinalState.from_int(general_state)!
+	state_name := OpcodeFinalState.from_int(general_state)!
 
 	match state_name {
 		.register_register {
@@ -475,7 +507,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				}
 			})!
 		}
-		.immediate { // Immediate
+		.immediate {
 			if tokens_list[current_token].token_type == TokenType.expression {
 				immediate_value = tokens_list[current_token].token_value as u32
 				println('Immediate value ${immediate_value}')
@@ -491,6 +523,19 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				rd: rd
 				s_bit: s_bit
 			})
+		}
+		.branch {
+			if tokens_list[current_token].token_type == TokenType.expression {
+				immediate_value = tokens_list[current_token].token_value as u32
+				println('Immediate value ${immediate_value}')
+			} else {
+				return error('Invalid expression ${tokens_list[current_token].token_value}')
+			}
+			return BOpcode{
+				condition: .al
+				l_flag: false
+				target_address: immediate_value << 2
+			}
 		}
 	}
 
