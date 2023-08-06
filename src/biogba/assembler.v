@@ -326,12 +326,7 @@ fn tokens_from_string(opcode_text string) !TokensList {
 	}
 }
 
-// immediate
-// register-immediate
-// register-register
-// rrx
-
-fn build_arithmetic_immediate(name string, fields ArithmeticOpcode) !Opcode {
+fn build_data_processing_opcode(name string, fields ArithmeticOpcode) !Opcode {
 	match name {
 		'ADC' {
 			return ADCOpcode{
@@ -361,68 +356,7 @@ fn build_arithmetic_immediate(name string, fields ArithmeticOpcode) !Opcode {
 			}
 		}
 		else {
-			return error('Arithmetic Opcode ${name} not implemented')
-		}
-	}
-}
-
-fn build_arithmetic_register_immediate(name string, fields ArithmeticOpcode) !Opcode {
-	match name {
-		'ADC' {
-			return ADCOpcode{
-				condition: fields.condition
-				shift_operand: fields.shift_operand
-				rn: fields.rn
-				rd: fields.rd
-				s_bit: fields.s_bit
-			}
-		}
-		'ADD' {
-			return ADDOpcode{
-				condition: fields.condition
-				shift_operand: fields.shift_operand
-				rn: fields.rn
-				rd: fields.rd
-				s_bit: fields.s_bit
-			}
-		}
-		'AND' {
-			return ANDOpcode{
-				condition: fields.condition
-				shift_operand: fields.shift_operand
-				rn: fields.rn
-				rd: fields.rd
-				s_bit: fields.s_bit
-			}
-		}
-		else {
-			return error('Arithmetic Opcode ${name} not implemented')
-		}
-	}
-}
-
-fn build_opcode_object(name string, fields ArithmeticOpcode) !Opcode {
-	match name {
-		'ADC' {
-			return ADCOpcode{
-				condition: fields.condition
-				shift_operand: fields.shift_operand
-				rn: fields.rn
-				rd: fields.rd
-				s_bit: fields.s_bit
-			}
-		}
-		'ADD' {
-			return ADDOpcode{
-				condition: fields.condition
-				shift_operand: fields.shift_operand
-				rn: fields.rn
-				rd: fields.rd
-				s_bit: fields.s_bit
-			}
-		}
-		else {
-			return error('Not implemented opcode')
+			return error('Data Processing Opcode ${name} is not implemented')
 		}
 	}
 }
@@ -484,7 +418,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 
 			opcode_name := tokens_list[0].token_value as string
 
-			return build_opcode_object(opcode_name, ArithmeticOpcode{
+			return build_data_processing_opcode(opcode_name, ArithmeticOpcode{
 				condition: condition
 				rd: rd
 				rn: rn
@@ -508,7 +442,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				return error('Shift expression too big')
 			}
 			opcode_name := tokens_list[0].token_value as string
-			return build_arithmetic_register_immediate(opcode_name, ArithmeticOpcode{
+			return build_data_processing_opcode(opcode_name, ArithmeticOpcode{
 				condition: condition
 				rd: rd
 				rn: rn
@@ -528,7 +462,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			current_token += 1
 			println('Rm ${rm}')
 			opcode_name := tokens_list[0].token_value as string
-			return build_opcode_object(opcode_name, ArithmeticOpcode{
+			return build_data_processing_opcode(opcode_name, ArithmeticOpcode{
 				condition: condition
 				rd: rd
 				rn: rn
@@ -550,7 +484,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			}
 			shift_operand := get_immediate_value(immediate_value)!
 			opcode_name := tokens_list[0].token_value as string
-			return build_arithmetic_immediate(opcode_name, ArithmeticOpcode{
+			return build_data_processing_opcode(opcode_name, ArithmeticOpcode{
 				condition: condition
 				shift_operand: shift_operand
 				rn: rn
