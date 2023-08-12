@@ -10,9 +10,11 @@ import biogba {
 import regex
 
 const (
-	opcode_names = ['ADC', 'ADD', 'AND', 'BL', 'B']
+	opcode_names = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'B']
 	conditions   = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT', 'GT',
 		'LE', 'AL']
+	data_processing_opcodes = ['ADC', 'ADD', 'AND', 'BIC']
+	branch_opcodes = ['B', 'BL']
 )
 
 /*
@@ -104,9 +106,9 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 	match iter.state {
 		0 {
 			token := iter.opcode_name_parts['name']
-			if token in ['ADC', 'ADD', 'AND'] {
+			if token in data_processing_opcodes{
 				iter.state = 1
-			} else if token in ['B', 'BL'] {
+			} else if token in branch_opcodes {
 				iter.state = 12
 			} else {
 				return none

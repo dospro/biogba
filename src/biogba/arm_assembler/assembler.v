@@ -8,7 +8,7 @@ enum OpcodeType {
 }
 
 fn get_opcode_type_from_name(opcode_name string) ?OpcodeType {
-	data_processing := ['ADC', 'ADD', 'AND']
+	data_processing := ['ADC', 'ADD', 'AND', 'BIC']
 	branch := ['B', 'BL']
 	if data_processing.contains(opcode_name) {
 		return .data_processing

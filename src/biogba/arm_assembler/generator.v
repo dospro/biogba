@@ -4,6 +4,7 @@ import biogba {
 	ADCOpcode,
 	ADDOpcode,
 	ANDOpcode,
+	BICOpcode,
 	ArithmeticOpcode,
 	BOpcode,
 	Opcode,
@@ -171,6 +172,15 @@ fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !O
 		}
 		'AND' {
 			return ANDOpcode{
+				condition: opcode.condition
+				shift_operand: opcode.shift_operand
+				rn: opcode.rn
+				rd: opcode.rd
+				s_bit: opcode.s_bit
+			}
+		}
+		'BIC' {
+			return BICOpcode{
 				condition: opcode.condition
 				shift_operand: opcode.shift_operand
 				rn: opcode.rn
