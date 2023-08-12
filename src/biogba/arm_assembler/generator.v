@@ -192,9 +192,14 @@ fn build_branch_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
 		current_token += 1
 	}
 	target_address := tokens_list[current_token].token_value as u32
+	if (target_address & 3) != 0 {
+		return error('Target address for B opcode must have lower bits set to 0')
+	}
+	opcode_name := tokens_list[0].token_value as string
 	return BOpcode{
 		condition: condition
-		target_address: target_address << 2
+		l_flag: if opcode_name == 'BL' { true } else { false }
+		target_address: target_address >> 2
 	}
 }
 
