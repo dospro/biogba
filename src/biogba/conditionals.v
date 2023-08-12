@@ -18,7 +18,7 @@ pub enum OpcodeCondition {
 	al
 }
 
-fn OpcodeCondition.from_u32(value u32) ?OpcodeCondition {
+pub fn OpcodeCondition.from_u32(value u32) !OpcodeCondition {
 	return match value {
 		0 {.eq}
 		1 {.ne}
@@ -41,8 +41,14 @@ fn OpcodeCondition.from_u32(value u32) ?OpcodeCondition {
 	}
 }
 
+pub fn opcode_condition_from_u32(value u32) !OpcodeCondition {
+	return OpcodeCondition.from_u32(value)
+}
+
+
+
 // Parses a string into a OpcodeCondition
-fn OpcodeCondition.from_string(condition_string string) ?OpcodeCondition {
+pub fn OpcodeCondition.from_string(condition_string string) ?OpcodeCondition {
 	return match condition_string.to_lower() {
 		'eq' { OpcodeCondition.eq }
 		'ne' { OpcodeCondition.ne }
@@ -61,4 +67,8 @@ fn OpcodeCondition.from_string(condition_string string) ?OpcodeCondition {
 		'al' { OpcodeCondition.al }
 		else { none }
 	}
+}
+
+pub fn opcode_condition_from_string(condition_string string) ?OpcodeCondition {
+	return OpcodeCondition.from_string(condition_string)
 }

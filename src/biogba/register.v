@@ -48,3 +48,7 @@ fn Register.from_string(register_string string) !u8 {
 		}
 	}
 }
+
+pub fn register_from_string(register_string string) !u8 {
+	return Register.from_string(register_string)!
+}

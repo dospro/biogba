@@ -1,4 +1,5 @@
 import biogba
+import biogba.arm_assembler {opcode_from_string}
 
 /*
 Test and opcode in immediate mode
@@ -6,7 +7,7 @@ Test and opcode in immediate mode
 fn test_assembler_and_immediate_mode() {
 	opcode_string := 'AND R0, R1, #10'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ANDOpcode{
 		condition: biogba.OpcodeCondition.al
 		rd: 0
@@ -30,7 +31,7 @@ Test and opcode in register immediate mode
 fn test_assembler_and_register_immediate_mode() {
 	opcode_string := 'ANDEQS R0, R1, R2, ASR, #10'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ANDOpcode{
 		condition: biogba.OpcodeCondition.eq
 		rd: 0

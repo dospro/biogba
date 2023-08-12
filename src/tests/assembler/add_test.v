@@ -1,4 +1,5 @@
 import biogba
+import biogba.arm_assembler {opcode_from_string}
 
 /*
 Test add opcode in immediate mode
@@ -6,7 +7,7 @@ Test add opcode in immediate mode
 fn test_assembler_add_immediate_mode() {
 	opcode_string := 'ADD R0, R1, #10'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADDOpcode{
 		condition: biogba.OpcodeCondition.al
 		rd: 0
@@ -30,7 +31,7 @@ Test add opcode in register immediate mode
 fn test_assembler_add_register_immediate_mode() {
 	opcode_string := 'ADD R0, R1, R2, ASR, #10'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADDOpcode{
 		condition: biogba.OpcodeCondition.al
 		rd: 0
@@ -56,7 +57,7 @@ Test add opcode in register rrx mode
 fn test_assembler_add_rrx() {
 	opcode_string := 'ADD R0, R1, R2, RRX'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADDOpcode{
 		condition: biogba.OpcodeCondition.al
 		rd: 0
@@ -82,7 +83,7 @@ Test add opcode in register-register mode
 fn test_assembler_add_register_register_mode() {
 	opcode_string := 'ADDCCS R0, R1, R2, LSL R3'
 
-	opcode := biogba.opcode_from_string(opcode_string) or { panic(err) }
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ADDOpcode{
 		condition: biogba.OpcodeCondition.cc
 		rd: 0

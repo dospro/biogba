@@ -1,5 +1,24 @@
-module biogba
+module arm_assembler
 
+import biogba {
+Opcode,
+ArithmeticOpcode,
+OpcodeCondition,
+opcode_condition_from_u32,
+opcode_condition_from_string,
+shift_type_from_u32,
+shift_type_from_string,
+register_from_string,
+ShiftOperandImmediate,
+ShiftOperandRegister,
+Register,
+ShiftType,
+Register,
+ADCOpcode,
+ADDOpcode,
+ANDOpcode,
+BOpcode
+}
 import regex
 
 type TokenValue = OpcodeCondition | ShiftType | bool | string | u32 | u8
@@ -137,7 +156,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			if !iter.opcode_name_parts['cond'].is_blank() {
 				iter.state = 2
 				return OpcodeToken{
-					token_value: OpcodeCondition.from_string(iter.opcode_name_parts['cond'] or {
+					token_value: opcode_condition_from_string(iter.opcode_name_parts['cond'] or {
 						''
 					}) or { OpcodeCondition.al }
 					token_type: TokenType.condition
@@ -151,7 +170,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			} else {
 				iter.state = 4
 				return OpcodeToken{
-					token_value: Register.from_string(iter.fields[1]) or {
+					token_value: register_from_string(iter.fields[1]) or {
 						iter.errors << err
 						return none
 					}
@@ -173,7 +192,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			} else {
 				iter.state = 4
 				return OpcodeToken{
-					token_value: Register.from_string(iter.fields[1]) or {
+					token_value: register_from_string(iter.fields[1]) or {
 						iter.errors << err
 						return none
 					}
@@ -185,7 +204,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			// After an S flag we can only have a register
 			iter.state = 4
 			return OpcodeToken{
-				token_value: Register.from_string(iter.fields[1]) or {
+				token_value: register_from_string(iter.fields[1]) or {
 					iter.errors << err
 					return none
 				}
@@ -196,7 +215,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			// After the first register we can only have a second register
 			iter.state = 5
 			return OpcodeToken{
-				token_value: Register.from_string(iter.fields[2]) or {
+				token_value: register_from_string(iter.fields[2]) or {
 					iter.errors << err
 					return none
 				}
@@ -212,7 +231,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			if iter.fields[3].substr(0, 1) == 'R' {
 				iter.state = 6
 				return OpcodeToken{
-					token_value: Register.from_string(iter.fields[3]) or {
+					token_value: register_from_string(iter.fields[3]) or {
 						iter.errors << err
 						return none
 					}
@@ -245,7 +264,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 				iter.state = 10
 				return OpcodeToken{
-					token_value: ShiftType.from_string('ror') or {
+					token_value: shift_type_from_string('ror') or {
 						iter.errors << err
 						return none
 					}
@@ -254,7 +273,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			} else {
 				iter.state = 7
 				return OpcodeToken{
-					token_value: ShiftType.from_string(iter.fields[4]) or {
+					token_value: shift_type_from_string(iter.fields[4]) or {
 						iter.errors << err
 						return none
 					}
@@ -273,7 +292,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 				iter.state = 8
 				return OpcodeToken{
-					token_value: Register.from_string(iter.fields[5]) or {
+					token_value: register_from_string(iter.fields[5]) or {
 						iter.errors << err
 						return none
 					}
@@ -301,9 +320,9 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			if !iter.opcode_name_parts['cond'].is_blank() {
 				iter.state = 13
 				return OpcodeToken{
-					token_value: OpcodeCondition.from_string(iter.opcode_name_parts['cond'] or {
+					token_value: opcode_condition_from_string(iter.opcode_name_parts['cond'] or {
 						''
-					}) or {OpcodeCondition.al}
+					}) or { OpcodeCondition.al }
 					token_type: TokenType.condition
 				}
 			} else {
@@ -320,7 +339,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 		}
 		13 {
 			iter.state = 14
-			return OpcodeToken {
+			return OpcodeToken{
 				token_value: u32(iter.fields[1][1..].parse_uint(16, 32) or {
 					iter.errors << err
 					return none
@@ -524,6 +543,7 @@ fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !O
 		}
 	}
 }
+
 fn build_branch_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
 	mut condition := OpcodeCondition.al
 	mut current_token := 1
@@ -554,7 +574,7 @@ fn get_opcode_type_from_name(opcode_name string) ?OpcodeType {
 Returns a Result type with either an Opcode struct from a string
 representation or an error in case something goes wrong
 */
-fn opcode_from_string(opcode_text string) !Opcode {
+pub fn opcode_from_string(opcode_text string) !Opcode {
 	parsed_tokens := tokens_from_string(opcode_text)!
 	tokens_list := parsed_tokens.tokens
 	general_state := parsed_tokens.state
@@ -568,8 +588,6 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			return build_branch_opcode(general_state, tokens_list)!
 		}
 	}
-
-
 
 	return error('Invalid opcode')
 }
