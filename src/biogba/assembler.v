@@ -13,6 +13,11 @@ enum TokenType {
 	shift_name
 }
 
+enum OpcodeType {
+	data_processing
+	branch
+}
+
 pub struct OpcodeToken {
 	token_value TokenValue
 	token_type  TokenType
@@ -23,7 +28,6 @@ enum OpcodeFinalState {
 	register_immediate = 9
 	register_register = 8
 	rrx = 10
-	branch = 14
 }
 
 fn OpcodeFinalState.from_int(value int) !OpcodeFinalState {
@@ -32,7 +36,6 @@ fn OpcodeFinalState.from_int(value int) !OpcodeFinalState {
 		9 { .register_immediate }
 		10 { .rrx }
 		11 { .immediate }
-		14 { .branch }
 		else { error('Unknown final state') }
 	}
 }
@@ -315,6 +318,16 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 			}
 		}
+		13 {
+			iter.state = 14
+			return OpcodeToken {
+				token_value: u32(iter.fields[1][1..].parse_uint(16, 32) or {
+					iter.errors << err
+					return none
+				})
+				token_type: .expression
+			}
+		}
 		else {
 			iter.errors << error('Invalid state in general parser')
 			return none
@@ -358,50 +371,8 @@ fn tokens_from_string(opcode_text string) !TokensList {
 	}
 }
 
-fn build_data_processing_opcode(name string, fields ArithmeticOpcode) !Opcode {
-	match name {
-		'ADC' {
-			return ADCOpcode{
-				condition: fields.condition
-				shift_operand: fields.shift_operand
-				rn: fields.rn
-				rd: fields.rd
-				s_bit: fields.s_bit
-			}
-		}
-		'ADD' {
-			return ADDOpcode{
-				condition: fields.condition
-				shift_operand: fields.shift_operand
-				rn: fields.rn
-				rd: fields.rd
-				s_bit: fields.s_bit
-			}
-		}
-		'AND' {
-			return ANDOpcode{
-				condition: fields.condition
-				shift_operand: fields.shift_operand
-				rn: fields.rn
-				rd: fields.rd
-				s_bit: fields.s_bit
-			}
-		}
-		else {
-			return error('Data Processing Opcode ${name} is not implemented')
-		}
-	}
-}
-
-/*
-Returns a Result type with either an Opcode struct from a string
-representation or an error in case something goes wrong
-*/
-fn opcode_from_string(opcode_text string) !Opcode {
-	parsed_tokens := tokens_from_string(opcode_text)!
-	tokens_list := parsed_tokens.tokens
-	general_state := parsed_tokens.state
-
+fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
+	opcode_name := tokens_list[0].token_value as string
 	mut condition := OpcodeCondition.al
 	mut s_bit := false
 	mut rd := u8(0x0)
@@ -439,7 +410,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 
 	state_name := OpcodeFinalState.from_int(general_state)!
 
-	match state_name {
+	opcode := match state_name {
 		.register_register {
 			rm = tokens_list[current_token].token_value as u8
 			current_token += 1
@@ -448,9 +419,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			current_token += 1
 			rs := tokens_list[current_token].token_value as u8
 
-			opcode_name := tokens_list[0].token_value as string
-
-			return build_data_processing_opcode(opcode_name, ArithmeticOpcode{
+			ArithmeticOpcode{
 				condition: condition
 				rd: rd
 				rn: rn
@@ -461,7 +430,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					shift_type: shift_type
 					shift_value: rs
 				}
-			})!
+			}
 		}
 		.register_immediate {
 			rm = tokens_list[current_token].token_value as u8
@@ -473,8 +442,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			if expression > 0x1F {
 				return error('Shift expression too big')
 			}
-			opcode_name := tokens_list[0].token_value as string
-			return build_data_processing_opcode(opcode_name, ArithmeticOpcode{
+			ArithmeticOpcode{
 				condition: condition
 				rd: rd
 				rn: rn
@@ -485,7 +453,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					shift_type: shift_type
 					shift_value: expression
 				}
-			})!
+			}
 		}
 		.rrx {
 			// In final state 10 we are parsing an RRX which
@@ -493,8 +461,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 			rm = tokens_list[current_token].token_value as u8
 			current_token += 1
 			println('Rm ${rm}')
-			opcode_name := tokens_list[0].token_value as string
-			return build_data_processing_opcode(opcode_name, ArithmeticOpcode{
+			ArithmeticOpcode{
 				condition: condition
 				rd: rd
 				rn: rn
@@ -505,7 +472,7 @@ fn opcode_from_string(opcode_text string) !Opcode {
 					shift_type: ShiftType.ror
 					shift_value: 0
 				}
-			})!
+			}
 		}
 		.immediate {
 			if tokens_list[current_token].token_type == TokenType.expression {
@@ -515,29 +482,94 @@ fn opcode_from_string(opcode_text string) !Opcode {
 				return error('Invalid expression ${tokens_list[current_token].token_value}')
 			}
 			shift_operand := get_immediate_value(immediate_value)!
-			opcode_name := tokens_list[0].token_value as string
-			return build_data_processing_opcode(opcode_name, ArithmeticOpcode{
+			ArithmeticOpcode{
 				condition: condition
 				shift_operand: shift_operand
 				rn: rn
 				rd: rd
 				s_bit: s_bit
-			})
-		}
-		.branch {
-			if tokens_list[current_token].token_type == TokenType.expression {
-				immediate_value = tokens_list[current_token].token_value as u32
-				println('Immediate value ${immediate_value}')
-			} else {
-				return error('Invalid expression ${tokens_list[current_token].token_value}')
-			}
-			return BOpcode{
-				condition: .al
-				l_flag: false
-				target_address: immediate_value << 2
 			}
 		}
 	}
+	match opcode_name {
+		'ADC' {
+			return ADCOpcode{
+				condition: opcode.condition
+				shift_operand: opcode.shift_operand
+				rn: opcode.rn
+				rd: opcode.rd
+				s_bit: opcode.s_bit
+			}
+		}
+		'ADD' {
+			return ADDOpcode{
+				condition: opcode.condition
+				shift_operand: opcode.shift_operand
+				rn: opcode.rn
+				rd: opcode.rd
+				s_bit: opcode.s_bit
+			}
+		}
+		'AND' {
+			return ANDOpcode{
+				condition: opcode.condition
+				shift_operand: opcode.shift_operand
+				rn: opcode.rn
+				rd: opcode.rd
+				s_bit: opcode.s_bit
+			}
+		}
+		else {
+			return error('Data Processing Opcode ${opcode_name} is not implemented')
+		}
+	}
+}
+fn build_branch_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
+	mut condition := OpcodeCondition.al
+	mut current_token := 1
+	if tokens_list[current_token].token_type == TokenType.condition {
+		condition = tokens_list[1].token_value as OpcodeCondition
+		current_token += 1
+	}
+	target_address := tokens_list[current_token].token_value as u32
+	return BOpcode{
+		condition: condition
+		target_address: target_address << 2
+	}
+}
+
+fn get_opcode_type_from_name(opcode_name string) ?OpcodeType {
+	data_processing := ['ADC', 'ADD', 'AND']
+	branch := ['B', 'BL']
+	if data_processing.contains(opcode_name) {
+		return .data_processing
+	} else if branch.contains(opcode_name) {
+		return .branch
+	} else {
+		return none
+	}
+}
+
+/*
+Returns a Result type with either an Opcode struct from a string
+representation or an error in case something goes wrong
+*/
+fn opcode_from_string(opcode_text string) !Opcode {
+	parsed_tokens := tokens_from_string(opcode_text)!
+	tokens_list := parsed_tokens.tokens
+	general_state := parsed_tokens.state
+	opcode_name := tokens_list[0].token_value as string
+	opcode_type := get_opcode_type_from_name(opcode_name)
+	match opcode_type {
+		.data_processing {
+			return build_data_processing_opcode(general_state, tokens_list)!
+		}
+		.branch {
+			return build_branch_opcode(general_state, tokens_list)!
+		}
+	}
+
+
 
 	return error('Invalid opcode')
 }
