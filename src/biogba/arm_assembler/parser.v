@@ -9,12 +9,13 @@ import biogba {
 }
 import regex
 
-const (
-	opcode_names = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'B']
+pub const (
+	opcode_names = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B']
 	conditions   = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT', 'GT',
 		'LE', 'AL']
 	data_processing_opcodes = ['ADC', 'ADD', 'AND', 'BIC']
 	branch_opcodes = ['B', 'BL']
+	branch_and_exchange_opcodes = ['BX']
 )
 
 /*
@@ -110,6 +111,8 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				iter.state = 1
 			} else if token in branch_opcodes {
 				iter.state = 12
+			} else if token in branch_and_exchange_opcodes {
+				iter.state = 15
 			} else {
 				return none
 			}
@@ -318,6 +321,25 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				token_type: .expression
 			}
 		}
+		15 {
+			iter.state = 16
+			return OpcodeToken{
+				token_value: opcode_condition_from_string(iter.opcode_name_parts['cond'] or {
+					''
+				}) or { OpcodeCondition.al }
+				token_type: TokenType.condition
+			}
+		}
+		16 {
+			iter.state = 17
+			return OpcodeToken{
+				token_value: register_from_string(iter.fields[1]) or {
+					iter.errors << err
+					return none
+				}
+				token_type: TokenType.register
+			}
+		}
 		else {
 			iter.errors << error('Invalid state in general parser')
 			return none
@@ -326,7 +348,7 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 }
 
 fn (self OpcodeParser) get_final_state() !int {
-	final_states := [8, 9, 10, 11, 14]
+	final_states := [8, 9, 10, 11, 14, 17]
 	if final_states.contains(self.state) {
 		return self.state
 	}

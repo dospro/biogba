@@ -1,13 +1,14 @@
 module arm_assembler
 
 import biogba {
+	Opcode,
 	ADCOpcode,
 	ADDOpcode,
 	ANDOpcode,
 	BICOpcode,
-	ArithmeticOpcode,
 	BOpcode,
-	Opcode,
+	BXOpcode,
+	ArithmeticOpcode,
 	OpcodeCondition,
 	ShiftOperandImmediate,
 	ShiftOperandRegister,
@@ -210,6 +211,21 @@ fn build_branch_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
 		condition: condition
 		l_flag: if opcode_name == 'BL' { true } else { false }
 		target_address: target_address >> 2
+	}
+}
+
+fn build_branch_and_exchange_opcode(tokens_list []OpcodeToken) !Opcode {
+	mut condition := OpcodeCondition.al
+	mut current_token := 1
+	if tokens_list[current_token].token_type == TokenType.condition {
+		condition = tokens_list[1].token_value as OpcodeCondition
+		current_token += 1
+	}
+	register := tokens_list[current_token].token_value as u8
+	opcode_name := tokens_list[0].token_value as string
+	return BXOpcode{
+		condition: condition
+		rm: register
 	}
 }
 

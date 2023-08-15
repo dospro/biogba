@@ -5,15 +5,16 @@ import biogba
 enum OpcodeType {
 	data_processing
 	branch
+	branch_and_exchange
 }
 
 fn get_opcode_type_from_name(opcode_name string) ?OpcodeType {
-	data_processing := ['ADC', 'ADD', 'AND', 'BIC']
-	branch := ['B', 'BL']
-	if data_processing.contains(opcode_name) {
+	if opcode_name in data_processing_opcodes {
 		return .data_processing
-	} else if branch.contains(opcode_name) {
+	} else if opcode_name in branch_opcodes {
 		return .branch
+	} else if opcode_name in branch_and_exchange_opcodes {
+		return .branch_and_exchange
 	} else {
 		return none
 	}
@@ -35,6 +36,9 @@ pub fn opcode_from_string(opcode_text string) !biogba.Opcode {
 		}
 		.branch {
 			return build_branch_opcode(general_state, tokens_list)!
+		}
+		.branch_and_exchange {
+			return build_branch_and_exchange_opcode(tokens_list)!
 		}
 	}
 
