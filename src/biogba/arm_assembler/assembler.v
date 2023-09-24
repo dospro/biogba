@@ -4,6 +4,7 @@ import biogba
 
 enum OpcodeType {
 	data_processing
+	data_processing_compare
 	branch
 	branch_and_exchange
 }
@@ -11,6 +12,8 @@ enum OpcodeType {
 fn get_opcode_type_from_name(opcode_name string) ?OpcodeType {
 	if opcode_name in data_processing_opcodes {
 		return .data_processing
+	} else if opcode_name in data_processing_compare_opcodes {
+		return .data_processing_compare
 	} else if opcode_name in branch_opcodes {
 		return .branch
 	} else if opcode_name in branch_and_exchange_opcodes {
@@ -33,6 +36,9 @@ pub fn opcode_from_string(opcode_text string) !biogba.Opcode {
 	match opcode_type {
 		.data_processing {
 			return build_data_processing_opcode(general_state, tokens_list)!
+		}
+		.data_processing_compare {
+			return build_data_processing_compare_opcode(general_state, tokens_list)!
 		}
 		.branch {
 			return build_branch_opcode(general_state, tokens_list)!

@@ -2,20 +2,21 @@ module arm_assembler
 
 import biogba {
 	OpcodeCondition,
+	ShiftType,
 	opcode_condition_from_string,
 	register_from_string,
 	shift_type_from_string,
-	ShiftType,
 }
 import regex
 
 pub const (
-	opcode_names = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B']
-	conditions   = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT', 'GT',
-		'LE', 'AL']
-	data_processing_opcodes = ['ADC', 'ADD', 'AND', 'BIC']
-	branch_opcodes = ['B', 'BL']
-	branch_and_exchange_opcodes = ['BX']
+	opcode_names                    = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B', 'CMN', 'CMP']
+	conditions                      = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS',
+		'GE', 'LT', 'GT', 'LE', 'AL']
+	data_processing_opcodes         = ['ADC', 'ADD', 'AND', 'BIC']
+	data_processing_compare_opcodes = ['CMN', 'CMP']
+	branch_opcodes                  = ['B', 'BL']
+	branch_and_exchange_opcodes     = ['BX']
 )
 
 /*
@@ -85,6 +86,7 @@ mut:
 	opcode_name_parts map[string]string
 	errors            []IError
 	fields            []string
+	field_index       int
 	state             int
 }
 
@@ -99,20 +101,24 @@ fn OpcodeParser.new(opcode_text string) !OpcodeParser {
 	return OpcodeParser{
 		opcode_name_parts: parts
 		fields: fields
+		field_index: 1
 		state: 0
 	}
 }
 
 fn (mut iter OpcodeParser) next() ?OpcodeToken {
+	println(iter.state)
 	match iter.state {
 		0 {
 			token := iter.opcode_name_parts['name']
-			if token in data_processing_opcodes{
+			if token in arm_assembler.data_processing_opcodes {
 				iter.state = 1
-			} else if token in branch_opcodes {
+			} else if token in arm_assembler.branch_opcodes {
 				iter.state = 12
-			} else if token in branch_and_exchange_opcodes {
+			} else if token in arm_assembler.branch_and_exchange_opcodes {
 				iter.state = 15
+			} else if token in arm_assembler.data_processing_compare_opcodes {
+				iter.state = 18
 			} else {
 				return none
 			}
@@ -143,11 +149,13 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 			} else {
 				iter.state = 4
+				register_value := register_from_string(iter.fields[iter.field_index]) or {
+					iter.errors << err
+					return none
+				}
+				iter.field_index += 1
 				return OpcodeToken{
-					token_value: register_from_string(iter.fields[1]) or {
-						iter.errors << err
-						return none
-					}
+					token_value: register_value
 					token_type: TokenType.register
 				}
 			}
@@ -165,11 +173,13 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 			} else {
 				iter.state = 4
+				register_value := register_from_string(iter.fields[iter.field_index]) or {
+					iter.errors << err
+					return none
+				}
+				iter.field_index += 1
 				return OpcodeToken{
-					token_value: register_from_string(iter.fields[1]) or {
-						iter.errors << err
-						return none
-					}
+					token_value: register_value
 					token_type: TokenType.register
 				}
 			}
@@ -177,38 +187,44 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 		3 {
 			// After an S flag we can only have a register
 			iter.state = 4
+			register_value := register_from_string(iter.fields[iter.field_index]) or {
+				iter.errors << err
+				return none
+			}
+			iter.field_index += 1
 			return OpcodeToken{
-				token_value: register_from_string(iter.fields[1]) or {
-					iter.errors << err
-					return none
-				}
+				token_value: register_value
 				token_type: TokenType.register
 			}
 		}
 		4 {
 			// After the first register we can only have a second register
 			iter.state = 5
+			register_value := register_from_string(iter.fields[iter.field_index]) or {
+				iter.errors << err
+				return none
+			}
+			iter.field_index += 1
 			return OpcodeToken{
-				token_value: register_from_string(iter.fields[2]) or {
-					iter.errors << err
-					return none
-				}
+				token_value: register_value
 				token_type: TokenType.register
 			}
 		}
 		5 {
-			// After the second register we can have:
+			// First state of the shift operand starts with:
 			// 1. An expression
 			// 2. A register
 
 			// If the token starts with R, then it is a register
-			if iter.fields[3].substr(0, 1) == 'R' {
+			if iter.fields[iter.field_index].substr(0, 1) == 'R' {
 				iter.state = 6
+				register_value := register_from_string(iter.fields[iter.field_index]) or {
+					iter.errors << err
+					return none
+				}
+				iter.field_index += 1
 				return OpcodeToken{
-					token_value: register_from_string(iter.fields[3]) or {
-						iter.errors << err
-						return none
-					}
+					token_value: register_value
 					token_type: TokenType.register
 				}
 			} else {
@@ -217,10 +233,11 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 					iter.errors << error('Too many parameters')
 					return none
 				}
-				expression_value := u32(iter.fields[3][1..].parse_uint(16, 32) or {
+				expression_value := u32(iter.fields[iter.field_index][1..].parse_uint(16, 32) or {
 					iter.errors << err
 					return none
 				})
+				iter.field_index += 1
 				iter.state = 11
 				return OpcodeToken{
 					token_value: expression_value
@@ -229,9 +246,10 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			}
 		}
 		6 {
-			// After a 3th register we are now in register mode.
+			// Shift Operand
+			// After a register we are now in register mode.
 			// So we either hace RRX or shiftname
-			if iter.fields[4].to_lower() == 'rrx' {
+			if iter.fields[iter.field_index].to_lower() == 'rrx' {
 				if iter.fields.len > 5 {
 					iter.errors << error('Too many parameters')
 					return none
@@ -246,11 +264,13 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 			} else {
 				iter.state = 7
+				shift_name := shift_type_from_string(iter.fields[iter.field_index]) or {
+					iter.errors << err
+					return none
+				}
+				iter.field_index += 1
 				return OpcodeToken{
-					token_value: shift_type_from_string(iter.fields[4]) or {
-						iter.errors << err
-						return none
-					}
+					token_value: shift_name
 					token_type: TokenType.shift_name
 				}
 			}
@@ -259,30 +279,34 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 			// After the shift name we can have:
 			// 1. Expression (Shift value)
 			// 2. Register
-			if iter.fields[5].substr(0, 1).to_lower() == 'r' {
+			if iter.fields[iter.field_index].substr(0, 1).to_lower() == 'r' {
 				if iter.fields.len > 6 {
 					iter.errors << error('Too many parameters')
 					return none
 				}
 				iter.state = 8
+				register_value := register_from_string(iter.fields[iter.field_index]) or {
+					iter.errors << err
+					return none
+				}
+				iter.field_index += 1
 				return OpcodeToken{
-					token_value: register_from_string(iter.fields[5]) or {
-						iter.errors << err
-						return none
-					}
+					token_value: register_value
 					token_type: TokenType.register
 				}
 			} else {
-				if iter.fields.len > 6 {
+				if iter.fields.len > iter.field_index + 1 {
 					iter.errors << error('Too many parameters')
 					return none
 				}
 				iter.state = 9
+				expression_value := u8(iter.fields[iter.field_index][1..].parse_uint(16, 8) or {
+					iter.errors << err
+					return none
+				})
+				iter.field_index += 1
 				return OpcodeToken{
-					token_value: u8(iter.fields[5][1..].parse_uint(16, 8) or {
-						iter.errors << err
-						return none
-					})
+					token_value: expression_value
 					token_type: TokenType.expression
 				}
 			}
@@ -324,9 +348,9 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 		15 {
 			iter.state = 16
 			return OpcodeToken{
-				token_value: opcode_condition_from_string(iter.opcode_name_parts['cond'] or {
-					''
-				}) or { OpcodeCondition.al }
+				token_value: opcode_condition_from_string(iter.opcode_name_parts['cond'] or { '' }) or {
+					OpcodeCondition.al
+				}
 				token_type: TokenType.condition
 			}
 		}
@@ -337,6 +361,27 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 					iter.errors << err
 					return none
 				}
+				token_type: TokenType.register
+			}
+		}
+		18 {
+			iter.state = 19
+			return OpcodeToken{
+				token_value: opcode_condition_from_string(iter.opcode_name_parts['cond'] or { '' }) or {
+					OpcodeCondition.al
+				}
+				token_type: TokenType.condition
+			}
+		}
+		19 {
+			iter.state = 5
+			register_value := register_from_string(iter.fields[iter.field_index]) or {
+				iter.errors << err
+				return none
+			}
+			iter.field_index += 1
+			return OpcodeToken{
+				token_value: register_value
 				token_type: TokenType.register
 			}
 		}
