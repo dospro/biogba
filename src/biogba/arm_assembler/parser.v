@@ -228,11 +228,9 @@ fn (mut iter OpcodeParser) next() ?OpcodeToken {
 				}
 				field := iter.fields.dequeue() // field is a separate variable because of a bug in vlang TODO
 				expression_value := u32(field[1..].parse_uint(16, 32) or {
-					println('There was an error')
 					iter.errors << err
 					return none
 				})
-				println('After')
 				iter.state = 11
 				return OpcodeToken{
 					token_value: expression_value

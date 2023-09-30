@@ -33,8 +33,8 @@ fn OpcodeFinalState.from_int(value int) !OpcodeFinalState {
 	}
 }
 
-fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
-	opcode_name := tokens_list[0].token_value as string
+fn build_data_processing_opcode(general_state int, mut tokens_list Queue[OpcodeToken]) !Opcode {
+	opcode_name := tokens_list.dequeue().token_value as string
 	mut condition := OpcodeCondition.al
 	mut s_bit := false
 	mut rd := u8(0x0)
@@ -42,30 +42,25 @@ fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !O
 	mut rm := u8(0x0)
 	mut immediate_value := u32(0x0)
 
-	mut current_token := 1
-	if tokens_list[current_token].token_type == TokenType.condition {
-		condition = tokens_list[1].token_value as OpcodeCondition
-		current_token += 1
+	if tokens_list.peek().token_type == TokenType.condition {
+		token := tokens_list.dequeue().token_value
+		condition = token as OpcodeCondition
 	} else {
 		condition = OpcodeCondition.al
 	}
-	if tokens_list[current_token].token_type == TokenType.s_bit {
+	if tokens_list.peek().token_type == TokenType.s_bit {
 		s_bit = true
-		current_token += 1
+		tokens_list.dequeue() // Discard s_bit value
 	} else {
 		s_bit = false
 	}
-	if tokens_list[current_token].token_type == TokenType.register {
-		rd = tokens_list[current_token].token_value as u8
-		current_token += 1
-		println('Rd ${rd}')
+	if tokens_list.peek().token_type == TokenType.register {
+		rd = tokens_list.dequeue().token_value as u8
 	} else {
 		return error('Expected register Rd')
 	}
-	if tokens_list[current_token].token_type == TokenType.register {
-		rn = tokens_list[current_token].token_value as u8
-		println('Rn ${rn}')
-		current_token += 1
+	if tokens_list.peek().token_type == TokenType.register {
+		rn = tokens_list.dequeue().token_value as u8
 	} else {
 		error('Expected register Rn')
 	}
@@ -74,12 +69,9 @@ fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !O
 
 	opcode := match state_name {
 		.register_register {
-			rm = tokens_list[current_token].token_value as u8
-			current_token += 1
-			println('Rm ${rm}')
-			shift_type := tokens_list[current_token].token_value as ShiftType
-			current_token += 1
-			rs := tokens_list[current_token].token_value as u8
+			rm = tokens_list.dequeue().token_value as u8
+			shift_type := tokens_list.dequeue().token_value as ShiftType
+			rs := tokens_list.dequeue().token_value as u8
 
 			ArithmeticOpcode{
 				condition: condition
@@ -95,12 +87,9 @@ fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !O
 			}
 		}
 		.register_immediate {
-			rm = tokens_list[current_token].token_value as u8
-			current_token += 1
-			println('Rm ${rm}')
-			shift_type := tokens_list[current_token].token_value as ShiftType
-			current_token += 1
-			expression := tokens_list[current_token].token_value as u8
+			rm = tokens_list.dequeue().token_value as u8
+			shift_type := tokens_list.dequeue().token_value as ShiftType
+			expression := tokens_list.dequeue().token_value as u8
 			if expression > 0x1F {
 				return error('Shift expression too big')
 			}
@@ -120,9 +109,7 @@ fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !O
 		.rrx {
 			// In final state 10 we are parsing an RRX which
 			// is build as a ROR #0
-			rm = tokens_list[current_token].token_value as u8
-			current_token += 1
-			println('Rm ${rm}')
+			rm = tokens_list.dequeue().token_value as u8
 			ArithmeticOpcode{
 				condition: condition
 				rd: rd
@@ -137,11 +124,10 @@ fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !O
 			}
 		}
 		.immediate {
-			if tokens_list[current_token].token_type == TokenType.expression {
-				immediate_value = tokens_list[current_token].token_value as u32
-				println('Immediate value ${immediate_value}')
+			if tokens_list.peek().token_type == TokenType.expression {
+				immediate_value = tokens_list.dequeue().token_value as u32
 			} else {
-				return error('Invalid expression ${tokens_list[current_token].token_value}')
+				return error('Invalid expression ${tokens_list.peek().token_value}')
 			}
 			shift_operand := get_immediate_value(immediate_value)!
 			ArithmeticOpcode{
@@ -196,23 +182,23 @@ fn build_data_processing_opcode(general_state int, tokens_list []OpcodeToken) !O
 	}
 }
 
-fn build_data_processing_compare_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
-	opcode_name := tokens_list[0].token_value as string
+fn build_data_processing_compare_opcode(general_state int, mut tokens_list Queue[OpcodeToken]) !Opcode {
+	opcode_name := tokens_list.dequeue().token_value as string
 	mut condition := OpcodeCondition.al
 	mut rn := u8(0x0)
 	mut rm := u8(0x0)
 	mut immediate_value := u32(0x0)
 
-	mut current_token := 1
-	if tokens_list[current_token].token_type == TokenType.condition {
-		condition = tokens_list[1].token_value as OpcodeCondition
-		current_token += 1
+	if tokens_list.peek().token_type == TokenType.condition {
+		condition = tokens_list.dequeue().token_value as OpcodeCondition
 	} else {
 		condition = OpcodeCondition.al
 	}
-	if tokens_list[current_token].token_type == TokenType.register {
-		rn = tokens_list[current_token].token_value as u8
-		current_token += 1
+
+	// Note: CMN instruction doesn't have the S bit part. Flags are always affected
+	// TODO: Maybe we can let S be set without any effect??
+	if tokens_list.peek().token_type == TokenType.register {
+		rn = tokens_list.dequeue().token_value as u8
 	} else {
 		error('Expected register Rn')
 	}
@@ -221,14 +207,11 @@ fn build_data_processing_compare_opcode(general_state int, tokens_list []OpcodeT
 
 	opcode := match state_name {
 		.register_register {
-			rm = tokens_list[current_token].token_value as u8
-			current_token += 1
-			println('Rm ${rm}')
-			shift_type := tokens_list[current_token].token_value as ShiftType
-			current_token += 1
-			rs := tokens_list[current_token].token_value as u8
+			rm = tokens_list.dequeue().token_value as u8
+			shift_type := tokens_list.dequeue().token_value as ShiftType
+			rs := tokens_list.dequeue().token_value as u8
 
-				ArithmeticOpcode{
+			ArithmeticOpcode{
 				condition: condition
 				rn: rn
 				shift_operand: ShiftOperandRegister{
@@ -240,15 +223,13 @@ fn build_data_processing_compare_opcode(general_state int, tokens_list []OpcodeT
 			}
 		}
 		.register_immediate {
-			rm = tokens_list[current_token].token_value as u8
-			current_token += 1
-			shift_type := tokens_list[current_token].token_value as ShiftType
-			current_token += 1
-			expression := tokens_list[current_token].token_value as u8
+			rm = tokens_list.dequeue().token_value as u8
+			shift_type := tokens_list.dequeue().token_value as ShiftType
+			expression := tokens_list.dequeue().token_value as u8
 			if expression > 0x1F {
 				return error('Shift expression too big')
 			}
-				ArithmeticOpcode{
+			ArithmeticOpcode{
 				condition: condition
 				rn: rn
 				shift_operand: ShiftOperandRegister{
@@ -262,9 +243,8 @@ fn build_data_processing_compare_opcode(general_state int, tokens_list []OpcodeT
 		.rrx {
 			// In final state 10 we are parsing an RRX which
 			// is build as a ROR #0
-			rm = tokens_list[current_token].token_value as u8
-			current_token += 1
-				ArithmeticOpcode{
+			rm = tokens_list.dequeue().token_value as u8
+			ArithmeticOpcode{
 				condition: condition
 				rn: rn
 				shift_operand: ShiftOperandRegister{
@@ -276,13 +256,13 @@ fn build_data_processing_compare_opcode(general_state int, tokens_list []OpcodeT
 			}
 		}
 		.immediate {
-			if tokens_list[current_token].token_type == TokenType.expression {
-				immediate_value = tokens_list[current_token].token_value as u32
+			if tokens_list.peek().token_type == TokenType.expression {
+				immediate_value = tokens_list.dequeue().token_value as u32
 			} else {
-				return error('Invalid expression ${tokens_list[current_token].token_value}')
+				return error('Invalid expression ${tokens_list.peek().token_value}')
 			}
 			shift_operand := get_immediate_value(immediate_value)!
-				ArithmeticOpcode{
+			ArithmeticOpcode{
 				condition: condition
 				shift_operand: shift_operand
 				rn: rn
@@ -304,18 +284,16 @@ fn build_data_processing_compare_opcode(general_state int, tokens_list []OpcodeT
 	}
 }
 
-fn build_branch_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
+fn build_branch_opcode(general_state int, mut tokens_list Queue[OpcodeToken]) !Opcode {
+	opcode_name := tokens_list.dequeue().token_value as string
 	mut condition := OpcodeCondition.al
-	mut current_token := 1
-	if tokens_list[current_token].token_type == TokenType.condition {
-		condition = tokens_list[1].token_value as OpcodeCondition
-		current_token += 1
+	if tokens_list.peek().token_type == TokenType.condition {
+		condition = tokens_list.dequeue().token_value as OpcodeCondition
 	}
-	target_address := tokens_list[current_token].token_value as u32
+	target_address := tokens_list.dequeue().token_value as u32
 	if (target_address & 3) != 0 {
 		return error('Target address for B opcode must have lower bits set to 0')
 	}
-	opcode_name := tokens_list[0].token_value as string
 	return BOpcode{
 		condition: condition
 		l_flag: if opcode_name == 'BL' { true } else { false }
@@ -323,15 +301,13 @@ fn build_branch_opcode(general_state int, tokens_list []OpcodeToken) !Opcode {
 	}
 }
 
-fn build_branch_and_exchange_opcode(tokens_list []OpcodeToken) !Opcode {
+fn build_branch_and_exchange_opcode(mut tokens_list Queue[OpcodeToken]) !Opcode {
+	tokens_list.dequeue() // Pop opcode name
 	mut condition := OpcodeCondition.al
-	mut current_token := 1
-	if tokens_list[current_token].token_type == TokenType.condition {
-		condition = tokens_list[1].token_value as OpcodeCondition
-		current_token += 1
+	if tokens_list.peek().token_type == TokenType.condition {
+		condition = tokens_list.dequeue().token_value as OpcodeCondition
 	}
-	register := tokens_list[current_token].token_value as u8
-	opcode_name := tokens_list[0].token_value as string
+	register := tokens_list.dequeue().token_value as u8
 	return BXOpcode{
 		condition: condition
 		rm: register

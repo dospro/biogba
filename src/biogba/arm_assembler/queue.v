@@ -20,7 +20,6 @@ fn (mut self Queue[T]) dequeue() T {
 	defer {
 		self.index += 1
 	}
-	println('Queue index ${self.index}')
 	return self.elements[self.index]
 }
 
