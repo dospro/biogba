@@ -10,10 +10,10 @@ import biogba {
 import regex
 
 pub const (
-	opcode_names                    = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B', 'CMN', 'CMP']
+	opcode_names                    = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B', 'CMN', 'CMP', 'EOR']
 	conditions                      = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS',
 		'GE', 'LT', 'GT', 'LE', 'AL']
-	data_processing_opcodes         = ['ADC', 'ADD', 'AND', 'BIC']
+	data_processing_opcodes         = ['ADC', 'ADD', 'AND', 'BIC', 'EOR']
 	data_processing_compare_opcodes = ['CMN', 'CMP']
 	branch_opcodes                  = ['B', 'BL']
 	branch_and_exchange_opcodes     = ['BX']

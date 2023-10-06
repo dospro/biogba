@@ -10,6 +10,7 @@ import biogba {
 	BXOpcode,
 	CMNOpcode,
 	CMPOpcode,
+	EOROpcode,
 	ArithmeticOpcode,
 	OpcodeCondition,
 	ShiftOperandImmediate,
@@ -170,6 +171,15 @@ fn build_data_processing_opcode(general_state int, mut tokens_list Queue[OpcodeT
 		}
 		'BIC' {
 			return BICOpcode{
+				condition: opcode.condition
+				shift_operand: opcode.shift_operand
+				rn: opcode.rn
+				rd: opcode.rd
+				s_bit: opcode.s_bit
+			}
+		}
+		'EOR' {
+			return EOROpcode{
 				condition: opcode.condition
 				shift_operand: opcode.shift_operand
 				rn: opcode.rn
