@@ -9,6 +9,7 @@ import biogba {
 	BOpcode,
 	BXOpcode,
 	CMNOpcode,
+	CMPOpcode,
 	ArithmeticOpcode,
 	OpcodeCondition,
 	ShiftOperandImmediate,
@@ -272,6 +273,14 @@ fn build_data_processing_compare_opcode(general_state int, mut tokens_list Queue
 	match opcode_name {
 		'CMN' {
 			return CMNOpcode{
+				condition: opcode.condition
+				shift_operand: opcode.shift_operand
+				rn: opcode.rn
+				s_bit: true // Always true
+			}
+		}
+		'CMP' {
+			return CMPOpcode {
 				condition: opcode.condition
 				shift_operand: opcode.shift_operand
 				rn: opcode.rn
