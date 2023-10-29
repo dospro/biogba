@@ -1,6 +1,6 @@
 module biogba
 
-type ShiftOperand = ShiftOperandImmediate | ShiftOperandRegister
+pub type ShiftOperand = ShiftOperandImmediate | ShiftOperandRegister
 
 pub struct ShiftOperandImmediate {
 	value  u8
@@ -37,7 +37,7 @@ pub interface Opcode {
 	as_hex() u32
 }
 
-pub struct ArithmeticOpcode {
+pub struct DataProcessingOpcode {
 pub:
 	condition     OpcodeCondition = OpcodeCondition.al
 	shift_operand ShiftOperand    = ShiftOperandImmediate{}
@@ -46,11 +46,11 @@ pub:
 	s_bit         bool
 }
 
-pub fn (opcode ArithmeticOpcode) get_opcode_part() u32 {
+pub fn (opcode DataProcessingOpcode) get_opcode_part() u32 {
 	return 0
 }
 
-pub fn (opcode &ArithmeticOpcode) as_hex() u32 {
+pub fn (opcode &DataProcessingOpcode) as_hex() u32 {
 	condition_part := (u32(opcode.condition) & 0xF) << 28
 	rn_part := u32(opcode.rn) << 16
 	rd_part := u32(opcode.rd) << 12
@@ -60,7 +60,7 @@ pub fn (opcode &ArithmeticOpcode) as_hex() u32 {
 }
 
 pub struct ADCOpcode {
-	ArithmeticOpcode
+	DataProcessingOpcode
 }
 
 pub fn (opcode ADCOpcode) get_opcode_part() u32 {
@@ -69,25 +69,25 @@ pub fn (opcode ADCOpcode) get_opcode_part() u32 {
 
 pub fn (opcode ADCOpcode) as_hex() u32 {
 	opcode_part := opcode.get_opcode_part()
-	return opcode.ArithmeticOpcode.as_hex() | opcode_part
+	return opcode.DataProcessingOpcode.as_hex() | opcode_part
 }
 
 pub struct ADDOpcode {
-	ArithmeticOpcode
+	DataProcessingOpcode
 }
 
 pub fn (opcode ADDOpcode) as_hex() u32 {
 	opcode_part := u32(0x0080_0000)
-	return (opcode.ArithmeticOpcode).as_hex() | opcode_part
+	return (opcode.DataProcessingOpcode).as_hex() | opcode_part
 }
 
 pub struct ANDOpcode {
-	ArithmeticOpcode
+	DataProcessingOpcode
 }
 
 pub fn (opcode ANDOpcode) as_hex() u32 {
 	opcode_part := u32(0)
-	return (opcode.ArithmeticOpcode).as_hex() | opcode_part
+	return (opcode.DataProcessingOpcode).as_hex() | opcode_part
 }
 
 pub struct BOpcode {
@@ -104,12 +104,12 @@ pub fn (self BOpcode) as_hex() u32 {
 }
 
 pub struct BICOpcode {
-	ArithmeticOpcode
+	DataProcessingOpcode
 }
 
 pub fn (opcode BICOpcode) as_hex() u32 {
 	opcode_part := u32(0x1C0_0000)
-	return (opcode.ArithmeticOpcode).as_hex() | opcode_part
+	return (opcode.DataProcessingOpcode).as_hex() | opcode_part
 }
 
 pub struct BXOpcode {
@@ -124,7 +124,7 @@ pub fn (opcode BXOpcode) as_hex() u32 {
 }
 
 pub struct CMNOpcode {
-	ArithmeticOpcode
+	DataProcessingOpcode
 	s_bit bool = true
 }
 
@@ -133,11 +133,11 @@ pub fn (opcode CMNOpcode) as_hex() u32 {
 	if !opcode.s_bit {
 		panic('CMN Opcode always has S bit set')
 	}
-	return opcode_part | opcode.ArithmeticOpcode.as_hex()
+	return opcode_part | opcode.DataProcessingOpcode.as_hex()
 }
 
 pub struct CMPOpcode {
-	ArithmeticOpcode
+	DataProcessingOpcode
 	s_bit bool = true
 }
 
@@ -146,16 +146,16 @@ pub fn (opcode CMPOpcode) as_hex() u32 {
 	if !opcode.s_bit {
 		panic('CMP Opcode always has S bit set')
 	}
-	return opcode_part | opcode.ArithmeticOpcode.as_hex()
+	return opcode_part | opcode.DataProcessingOpcode.as_hex()
 }
 
 pub struct EOROpcode {
-	ArithmeticOpcode
+	DataProcessingOpcode
 }
 
 pub fn (opcode EOROpcode) as_hex() u32 {
 	opcode_part := u32(0x0020_0000)
-	return opcode_part | opcode.ArithmeticOpcode.as_hex()
+	return opcode_part | opcode.DataProcessingOpcode.as_hex()
 }
 
 pub struct LDMOpcode {

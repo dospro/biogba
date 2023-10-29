@@ -30,6 +30,7 @@ pub enum OpcodeTokenType {
 }
 
 pub struct Token {
+pub:
 	token_type OpcodeTokenType
 	lexeme     string
 }
@@ -128,7 +129,7 @@ pub fn (mut self Tokenizer) next() ?Token {
 				}
 			}
 			8 {
-				if !next_character.is_hex_digit() {
+				if !next_character.is_hex_digit() && next_character.ascii_str() != '_' {
 					state = -1
 				}
 			}
