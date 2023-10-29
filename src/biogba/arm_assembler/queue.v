@@ -1,12 +1,13 @@
 module arm_assembler
+
 struct Queue[T] {
 	elements []T
-	mut:
+mut:
 	index int
 }
 
 fn Queue.from_array[T](elements []T) Queue[T] {
-	return Queue[T] {
+	return Queue[T]{
 		elements: elements.clone()
 		index: 0
 	}

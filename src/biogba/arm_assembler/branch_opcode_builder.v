@@ -1,22 +1,24 @@
 module arm_assembler
 
 import biogba {
-	Opcode
-	BOpcode
-	OpcodeCondition
-	opcode_condition_from_string
+	BOpcode,
+	Opcode,
+	OpcodeCondition,
+	opcode_condition_from_string,
 }
 
 pub struct BranchOpcodeBuilder {
 mut:
-	opcode_name   string
+	opcode_name    string
 	condition      OpcodeCondition = OpcodeCondition.al
 	l_flag         bool = false
 	target_address u32
 }
 
 pub fn BranchOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer) !Opcode {
-	mut builder := BranchOpcodeBuilder{opcode_name: opcode_name}
+	mut builder := BranchOpcodeBuilder{
+		opcode_name: opcode_name
+	}
 	mut state := 1
 	for state != -1 && state != 100 {
 		token := tokenizer.next() or {
@@ -34,9 +36,7 @@ pub fn BranchOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer) !O
 						2
 					}
 					.expression {
-						value := u32(token.lexeme[1..].parse_uint(16, 32) or {
-							return err
-						})
+						value := u32(token.lexeme[1..].parse_uint(16, 32) or { return err })
 						if (value & 3) != 0 {
 							return error('Target address for B opcode must have lower 2 bits set to 0')
 						}
@@ -51,9 +51,7 @@ pub fn BranchOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer) !O
 			2 {
 				state = match token.token_type {
 					.expression {
-						value := u32(token.lexeme[1..].parse_uint(16, 32) or {
-							return err
-						})
+						value := u32(token.lexeme[1..].parse_uint(16, 32) or { return err })
 						if (value & 3) != 0 {
 							return error('Target address for B opcode must have lower 2 bits set to 0')
 						}
@@ -94,14 +92,14 @@ pub fn (mut self BranchOpcodeBuilder) set_target_address(value u32) BranchOpcode
 pub fn (mut self BranchOpcodeBuilder) build() !Opcode {
 	match self.opcode_name {
 		'B' {
-			return BOpcode {
+			return BOpcode{
 				condition: self.condition
 				l_flag: false
 				target_address: self.target_address >> 2
 			}
 		}
 		'BL' {
-			return BOpcode {
+			return BOpcode{
 				condition: self.condition
 				l_flag: true
 				target_address: self.target_address >> 2

@@ -1,17 +1,17 @@
 module arm_assembler
 
 import biogba {
-	Opcode
-	BXOpcode
-	OpcodeCondition
-	opcode_condition_from_string
-	register_from_string
+	BXOpcode,
+	Opcode,
+	OpcodeCondition,
+	opcode_condition_from_string,
+	register_from_string,
 }
 
 pub struct BranchExchangeOpcodeBuilder {
 mut:
-	condition     OpcodeCondition = OpcodeCondition.al
-	rm            u8
+	condition OpcodeCondition = OpcodeCondition.al
+	rm        u8
 }
 
 pub fn BranchExchangeOpcodeBuilder.parse(mut tokenizer Tokenizer) !Opcode {
@@ -33,9 +33,7 @@ pub fn BranchExchangeOpcodeBuilder.parse(mut tokenizer Tokenizer) !Opcode {
 						2
 					}
 					.register {
-						value := register_from_string(token.lexeme) or {
-							return err
-						}
+						value := register_from_string(token.lexeme) or { return err }
 						builder.set_rm(value)
 						100
 					}
@@ -47,9 +45,7 @@ pub fn BranchExchangeOpcodeBuilder.parse(mut tokenizer Tokenizer) !Opcode {
 			2 {
 				state = match token.token_type {
 					.register {
-						value := register_from_string(token.lexeme) or {
-							return err
-						}
+						value := register_from_string(token.lexeme) or { return err }
 						builder.set_rm(value)
 						100
 					}
@@ -85,7 +81,7 @@ pub fn (mut self BranchExchangeOpcodeBuilder) set_rm(value u8) BranchExchangeOpc
 }
 
 pub fn (mut self BranchExchangeOpcodeBuilder) build() !Opcode {
-	return BXOpcode {
+	return BXOpcode{
 		condition: self.condition
 		rm: self.rm
 	}

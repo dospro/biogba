@@ -1,18 +1,16 @@
 module arm_assembler
 
-import biogba {
-	ADCOpcode
-	ADDOpcode
-	DataProcessingOpcode
-}
+import biogba
 
 /*
 Returns a Result type with either an Opcode struct from a string
 representation or an error in case something goes wrong
 */
 pub fn opcode_from_string(opcode_text string) !biogba.Opcode {
-	mut tokenizer := Tokenizer{text: opcode_text}
-	opcode_name := tokenizer.next() or {return error('Error parsing line of code')}
+	mut tokenizer := Tokenizer{
+		text: opcode_text
+	}
+	opcode_name := tokenizer.next() or { return error('Error parsing line of code') }
 
 	value := match opcode_name.lexeme {
 		'ADC', 'ADD', 'AND', 'BIC', 'EOR' {

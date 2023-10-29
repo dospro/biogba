@@ -1,28 +1,27 @@
 module arm_assembler
 
 import biogba {
-	Opcode
-	ADCOpcode
-	ADDOpcode
-	ANDOpcode
-	BICOpcode
-	CMNOpcode
-	CMPOpcode
-	EOROpcode
-	OpcodeCondition
-	DataProcessingOpcode
-	ShiftType
-	ShiftOperand
-	ShiftOperandImmediate
-	ShiftOperandRegister
-	opcode_condition_from_string
-	register_from_string
-	shift_type_from_string
+	ADCOpcode,
+	ADDOpcode,
+	ANDOpcode,
+	BICOpcode,
+	CMNOpcode,
+	CMPOpcode,
+	EOROpcode,
+	Opcode,
+	OpcodeCondition,
+	ShiftOperand,
+	ShiftOperandImmediate,
+	ShiftOperandRegister,
+	ShiftType,
+	opcode_condition_from_string,
+	register_from_string,
+	shift_type_from_string,
 }
 
 pub struct Pair[T] {
 pub:
-	first T
+	first  T
 	second T
 }
 
@@ -30,7 +29,7 @@ pub type ShiftOperandBuilder = ShiftOperandImmediateBuilder | ShiftOperandRegist
 
 pub struct ShiftOperandImmediateBuilder {
 mut:
-	value u8
+	value  u8
 	rotate u8
 }
 
@@ -46,7 +45,7 @@ pub fn (mut shift_operand ShiftOperandImmediateBuilder) set_value(value Pair[u8]
 }
 
 pub fn (mut shift_operand ShiftOperandImmediateBuilder) build() ShiftOperandImmediate {
-	return ShiftOperandImmediate {
+	return ShiftOperandImmediate{
 		value: shift_operand.value
 		rotate: shift_operand.rotate
 	}
@@ -81,14 +80,13 @@ pub fn (mut shift_operand ShiftOperandRegisterBuilder) set_shift_value(value u8)
 }
 
 pub fn (mut shift_operand ShiftOperandRegisterBuilder) build() ShiftOperandRegister {
-	return ShiftOperandRegister {
+	return ShiftOperandRegister{
 		rm: shift_operand.rm
 		register_shift: shift_operand.register_shift
 		shift_type: shift_operand.shift_type
 		shift_value: shift_operand.shift_value
 	}
 }
-
 
 pub struct DataProcessingOpcodeBuilder {
 mut:
@@ -101,7 +99,9 @@ mut:
 }
 
 pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer) !Opcode {
-	mut builder := DataProcessingOpcodeBuilder{opcode_name: opcode_name}
+	mut builder := DataProcessingOpcodeBuilder{
+		opcode_name: opcode_name
+	}
 	mut shift_operand_immediate_builder := ShiftOperandImmediateBuilder{}
 	mut shift_operand_register_builder := ShiftOperandRegisterBuilder{}
 	mut state := 1
@@ -183,31 +183,24 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 					}
 				}
 			}
-
 			5 {
 				state = match token.token_type {
 					.expression {
-						value := u32(token.lexeme[1..].parse_uint(16, 32) or {
-							return err
-						})
-						value_pair := get_immediate_value(value) or {
-							return err
-						}
+						value := u32(token.lexeme[1..].parse_uint(16, 32) or { return err })
+						value_pair := get_immediate_value(value) or { return err }
 						shift_operand_immediate_builder.set_value(value_pair)
 						builder.set_shift_operand(shift_operand_immediate_builder.build())
 						100
 					}
 					.register {
-						value := register_from_string(token.lexeme) or {
-							return err
-						}
+						value := register_from_string(token.lexeme) or { return err }
 						shift_operand_register_builder.set_rm(value)
 						6
 					}
 					else {
 						-1
 					}
-				}				
+				}
 			}
 			6 {
 				state = match token.token_type {
@@ -218,9 +211,7 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 							builder.set_shift_operand(shift_operand_register_builder.build())
 							100
 						} else {
-							value := shift_type_from_string(token.lexeme) or {
-								return err
-							}
+							value := shift_type_from_string(token.lexeme) or { return err }
 							shift_operand_register_builder.set_shift_type(value)
 							7
 						}
@@ -277,7 +268,9 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 }
 
 pub fn DataProcessingOpcodeBuilder.parse_compare_opcode(opcode_name string, mut tokenizer Tokenizer) !Opcode {
-	mut builder := DataProcessingOpcodeBuilder{opcode_name: opcode_name}
+	mut builder := DataProcessingOpcodeBuilder{
+		opcode_name: opcode_name
+	}
 	mut shift_operand_immediate_builder := ShiftOperandImmediateBuilder{}
 	mut shift_operand_register_builder := ShiftOperandRegisterBuilder{}
 	mut state := 1
@@ -326,27 +319,21 @@ pub fn DataProcessingOpcodeBuilder.parse_compare_opcode(opcode_name string, mut 
 			3 {
 				state = match token.token_type {
 					.expression {
-						value := u32(token.lexeme[1..].parse_uint(16, 32) or {
-							return err
-						})
-						value_pair := get_immediate_value(value) or {
-							return err
-						}
+						value := u32(token.lexeme[1..].parse_uint(16, 32) or { return err })
+						value_pair := get_immediate_value(value) or { return err }
 						shift_operand_immediate_builder.set_value(value_pair)
 						builder.set_shift_operand(shift_operand_immediate_builder.build())
 						100
 					}
 					.register {
-						value := register_from_string(token.lexeme) or {
-							return err
-						}
+						value := register_from_string(token.lexeme) or { return err }
 						shift_operand_register_builder.set_rm(value)
 						4
 					}
 					else {
 						-1
 					}
-				}				
+				}
 			}
 			4 {
 				state = match token.token_type {
@@ -357,9 +344,7 @@ pub fn DataProcessingOpcodeBuilder.parse_compare_opcode(opcode_name string, mut 
 							builder.set_shift_operand(shift_operand_register_builder.build())
 							100
 						} else {
-							value := shift_type_from_string(token.lexeme) or {
-								return err
-							}
+							value := shift_type_from_string(token.lexeme) or { return err }
 							shift_operand_register_builder.set_shift_type(value)
 							5
 						}
@@ -507,8 +492,6 @@ pub fn (self DataProcessingOpcodeBuilder) build() !Opcode {
 	}
 }
 
-
-
 fn get_immediate_value(immediate u32) !Pair[u8] {
 	mut immediate_value := immediate
 	mut shift_counter := 0
@@ -530,4 +513,3 @@ fn get_immediate_value(immediate u32) !Pair[u8] {
 
 	return Pair{u8(immediate_value), u8(((32 - shift_counter) / 2) & 0xF)}
 }
-

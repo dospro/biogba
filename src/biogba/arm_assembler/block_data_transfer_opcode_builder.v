@@ -1,12 +1,12 @@
 module arm_assembler
 
 import biogba {
-	Register
-	Opcode
-	LDMOpcode
-	OpcodeCondition
-	opcode_condition_from_string
-	register_from_string
+	LDMOpcode,
+	Opcode,
+	OpcodeCondition,
+	Register,
+	opcode_condition_from_string,
+	register_from_string,
 }
 
 pub struct BlockDataTransferOpcodeBuilder {
@@ -21,7 +21,9 @@ mut:
 }
 
 pub fn BlockDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer) !Opcode {
-	mut builder := BlockDataTransferOpcodeBuilder{opcode_name: opcode_name}
+	mut builder := BlockDataTransferOpcodeBuilder{
+		opcode_name: opcode_name
+	}
 	mut state := 1
 	for state != -1 && state != 100 {
 		token := tokenizer.next() or {
@@ -43,7 +45,7 @@ pub fn BlockDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer To
 						builder.set_condition(value)
 						2
 					}
-					.addressing_mode {						
+					.addressing_mode {
 						builder.set_addressing_mode(token.lexeme)
 						3
 					}
@@ -54,7 +56,7 @@ pub fn BlockDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer To
 			}
 			2 {
 				state = match token.token_type {
-					.addressing_mode {						
+					.addressing_mode {
 						builder.set_addressing_mode(token.lexeme)
 						3
 					}
@@ -71,7 +73,7 @@ pub fn BlockDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer To
 						}
 						builder.set_rn(value)
 						4
-					} 
+					}
 					else {
 						-1
 					}
@@ -117,7 +119,8 @@ pub fn BlockDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer To
 					.s_bit {
 						println('Unimplemented')
 						100
-					} else {
+					}
+					else {
 						-1
 					}
 				}
@@ -184,7 +187,7 @@ pub fn (mut self BlockDataTransferOpcodeBuilder) set_register_list(value []Regis
 pub fn (mut self BlockDataTransferOpcodeBuilder) build() !Opcode {
 	match self.opcode_name {
 		'LDM' {
-			return LDMOpcode {
+			return LDMOpcode{
 				condition: self.condition
 				rn: self.rn
 				p_bit: self.p_bit

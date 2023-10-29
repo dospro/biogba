@@ -14,7 +14,7 @@ pub const (
 	conditions       = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT',
 		'GT', 'LE', 'AL']
 	addressing_modes = ['IB', 'IA', 'DB', 'DA', 'ED', 'FD', 'EA', 'FA']
-	shift_names = ['LSL', 'LSR', 'ASR', 'ROR', 'RRX']
+	shift_names      = ['LSL', 'LSR', 'ASR', 'ROR', 'RRX']
 )
 
 pub enum OpcodeTokenType {
@@ -153,8 +153,8 @@ pub fn (mut self Tokenizer) next() ?Token {
 		lexeme = lexeme.limit(lexeme.len - 1)
 	}
 	return match state {
-		2 {	Token{OpcodeTokenType.opcode_name, lexeme} }
-		3 {	Token{OpcodeTokenType.condition, lexeme} }
+		2 { Token{OpcodeTokenType.opcode_name, lexeme} }
+		3 { Token{OpcodeTokenType.condition, lexeme} }
 		4 { Token{OpcodeTokenType.s_bit, lexeme} }
 		5 { Token{OpcodeTokenType.addressing_mode, lexeme} }
 		6 { Token{OpcodeTokenType.register, lexeme} }
@@ -163,7 +163,7 @@ pub fn (mut self Tokenizer) next() ?Token {
 		10 { Token{OpcodeTokenType.register_list, lexeme} }
 		11 { Token{OpcodeTokenType.write_back, lexeme} }
 		12 { Token{OpcodeTokenType.s_bit, lexeme} }
-		else { none	}
+		else { none }
 	}
 }
 
@@ -176,17 +176,17 @@ pub fn (mut self Tokenizer) parse() []Token {
 }
 
 fn is_opcode_name(lexeme string) bool {
-	return lexeme in opcode_names
+	return lexeme in arm_assembler.opcode_names
 }
 
 fn is_condition(lexeme string) bool {
-	return lexeme in conditions
+	return lexeme in arm_assembler.conditions
 }
 
 fn is_address_mode(lexeme string) bool {
-	return lexeme in addressing_modes
+	return lexeme in arm_assembler.addressing_modes
 }
 
 fn is_shift_name(lexeme string) bool {
-	return lexeme in shift_names
+	return lexeme in arm_assembler.shift_names
 }
