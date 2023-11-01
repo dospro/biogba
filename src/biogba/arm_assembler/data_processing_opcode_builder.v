@@ -116,7 +116,7 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 				state = match token.token_type {
 					.condition {
 						value := opcode_condition_from_string(token.lexeme) or {
-							return error('Invalud condition')
+							return error('Invalid condition')
 						}
 						builder.set_condition(value)
 						2
@@ -127,7 +127,7 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 					}
 					.register {
 						value := register_from_string(token.lexeme) or {
-							return error('Invalud register')
+							return error('Invalid register')
 						}
 						builder.set_rd(value)
 						4
@@ -173,7 +173,7 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 				state = match token.token_type {
 					.register {
 						value := register_from_string(token.lexeme) or {
-							return error('Invalud register')
+							return error('Invalid register')
 						}
 						builder.set_rn(value)
 						5
@@ -285,14 +285,14 @@ pub fn DataProcessingOpcodeBuilder.parse_compare_opcode(opcode_name string, mut 
 				state = match token.token_type {
 					.condition {
 						value := opcode_condition_from_string(token.lexeme) or {
-							return error('Invalud condition')
+							return error('Invalid condition')
 						}
 						builder.set_condition(value)
 						2
 					}
 					.register {
 						value := register_from_string(token.lexeme) or {
-							return error('Invalud register')
+							return error('Invalid register')
 						}
 						builder.set_rn(value)
 						3

@@ -1,21 +1,59 @@
 digraph g {
   rankdir=LR;
-  node [shape = doublecircle]; 11 8 9 10;
+  node [shape = doubleoctagon]; 17 10 11 8 9 14 ;
+  node [shape = box] ShiftOperandA ShiftOperandB ShiftOperand
 	node [shape = circle];
+  
+  17 [label="Branch & \nExchange"]
+  14 [label=Branch]
+  11 [label=Immediate]
+  10 [label=RRX]
+  8 [label="Register\nRegister"]
+  9 [label="Register\nImmediate"]
 
-  0 -> 1 [label=opcodeName]
+  0 -> 1 [label="ADC,ADC,AND"]
   1 -> 2 [label=condition]
   2 -> 3 [label=S]
   1 -> 3 [label=S]
   1 -> 4 [label=register]
   2 -> 4 [label=register]
   3 -> 4 [label=register]
-  4 -> 5 [label=register]
-  5 -> 6 [label=register]
+  4 -> ShiftOperandA [label=register]
+
+  // Shift Operand
+  ShiftOperand -> 6 [label=register]
+  ShiftOperand -> 11 [label=expression]
   6 -> 7 [label=shiftName]
+  6 -> 10 [label=RRX]
   7 -> 8 [label=register]
   7 -> 9 [label=expression]
-  6 -> 10 [label=RRX]
-  5 -> 11 [label=expression]
+
+  // Para Branch
+  0 -> 12 [label="B,BL"]
+  12 -> 13 [label=condition]
+  12 -> 14 [label=expression]
+  13 -> 14 [label=expression]
+
+  0 -> 15 [label="BX"]
+  15 -> 16 [label=condition]
+  15 -> 17 [label=register]
+  16 -> 17 [label=register]
+
+  0 -> 18 [label="CMN,CMP"]
+  18 -> 19 [label=condition]
+  18 -> ShiftOperandB [label=register]
+  19 -> ShiftOperandB [label=register]
+
+  0 -> 20 [label="LDM,STM"]
+  20 -> 21 [label="condition"]
+  21 -> 22 [label="address_mode"]
+  20 -> 22 [label="address_mode"]
+  22 -> 23 [label="register"]
+  23 -> 24 [label="!"]
+  23 -> 25 [label="register_list"]
+  24 -> 25 [label="register_list"]
+  25 -> 26 [label="^"]
+
+
 
 }

@@ -34,7 +34,7 @@ pub fn BlockDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer To
 			}
 			break
 		}
-		println('State: ${state} = Token: ${token.lexeme}')
+		// println('State: ${state} = Token: ${token.lexeme}')
 		match state {
 			1 {
 				state = match token.token_type {
@@ -86,10 +86,9 @@ pub fn BlockDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer To
 						5
 					}
 					.register_list {
-						// value := parse_register_list(token_type.lexeme) or {
-						// 	return error('Cannot parse register list')
-						// }
-						value := [Register.r1]
+						value := parse_register_list(token.lexeme) or {
+							return error('Cannot parse register list')
+						}
 						builder.set_register_list(value)
 						6
 					}
@@ -101,10 +100,9 @@ pub fn BlockDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer To
 			5 {
 				state = match token.token_type {
 					.register_list {
-						// value := parse_register_list(token_type.lexeme) or {
-						// 	return error('Cannot parse register list')
-						// }
-						value := [Register.r1]
+						value := parse_register_list(token.lexeme) or {
+							return error('Cannot parse register list')
+						}
 						builder.set_register_list(value)
 						6
 					}
@@ -200,4 +198,161 @@ pub fn (mut self BlockDataTransferOpcodeBuilder) build() !Opcode {
 			return error('Opcode ${self.opcode_name} not implemented')
 		}
 	}
+}
+
+fn parse_register_list(lexeme string) ![]Register {
+	println(lexeme)
+	mut state := 0
+	mut register_list := []Register{}
+	mut position := 0
+	mut register_string := ''
+	mut register_range_start := 0
+	mut register_range_end := 0
+	for state != -1 && state != 100{
+		if position >= lexeme.len {
+			break
+		}
+		next_character := lexeme[position]
+		position += 1
+		match state {
+			0 {
+				// It must start with a curly bracket. No space or anything
+				state = match next_character.ascii_str() {
+					'{' { 1 }
+					else { - 1 }
+				}
+			}
+			1 {
+				// Ignore any space. Look for an R
+				if next_character.is_space() {
+					state = 1
+				} else if next_character.ascii_str() == 'R' {
+					register_string += 'R'
+					state = 2
+				} else {
+					state = -1
+				}
+			}
+			2 {
+				if next_character.is_digit() {
+					register_string += next_character.ascii_str()
+					state = 3
+				} else {
+					state = -1
+				}
+			}
+			3 {
+				if next_character.is_digit() {
+					register_string += next_character.ascii_str()
+					state = 3
+				} else if next_character.is_space() {
+					value := register_from_string(register_string) or {
+						return error('Invalid register')
+					}
+					register_list << Register.from_int(value) or {return err}
+					register_string = ''
+					state = 4
+				} else if next_character.ascii_str() == ',' {
+					value := register_from_string(register_string) or {
+						return error('Invalid register')
+					}
+					register_list << Register.from_int(value) or {return err}
+					register_string = ''
+					state = 1
+				} else if next_character.ascii_str() == '-' {
+					value := register_from_string(register_string) or {
+						return error('Invalid register')
+					}
+					register_range_start = value
+					register_string = ''
+					state = 5
+				} else if next_character.ascii_str() == '}' {
+					value := register_from_string(register_string) or {
+						return error('Invalid register')
+					}
+					register_list << Register.from_int(value) or {return err}
+					register_string = ''
+					state = 100
+				} else {
+					state = -1
+				}
+			}
+			4 {
+				if next_character.is_space() {
+					state = 4
+				} else if next_character.ascii_str() == '}' {
+					state = 100
+				} else {
+					state = -1
+				}
+			}
+			5 {
+				if next_character.ascii_str() == 'R' {
+					register_string += 'R'
+					state = 6
+				} else {
+					state = -1
+				}
+			}
+			6 {
+				if next_character.is_digit() {
+					register_string += next_character.ascii_str()
+					state = 7
+				} else {
+					state = -1
+				}
+			}
+			7 {
+				if next_character.is_digit() {
+					register_string += next_character.ascii_str()
+					state = 7
+				} else if next_character.is_space() {
+					value := register_from_string(register_string) or {
+						return error('Invalid register')
+					}
+					register_range_end = value
+					mut i := register_range_start
+					for i <= register_range_end {
+						register_list << Register.from_int(i) or {return err}
+						i += 1
+					}
+					register_string = ''
+					state = 4
+				} else if next_character.ascii_str() == ',' {
+					value := register_from_string(register_string) or {
+						return error('Invalid register')
+					}
+					register_range_end = value
+					mut i := register_range_start
+					for i <= register_range_end {
+						register_list << Register.from_int(i) or {return err}
+						i += 1
+					}
+					register_string = ''
+					state = 1
+				} else if next_character.ascii_str() == '}' {
+					value := register_from_string(register_string) or {
+						return error('Invalid register')
+					}
+					register_range_end = value
+					mut i := register_range_start
+					for i <= register_range_end {
+						register_list << Register.from_int(i) or {return err}
+						i += 1
+					}
+					register_string = ''
+					state = 100
+				} else {
+					state = -1
+				}
+			}
+			else {
+				state = -1
+			}
+		}
+	}
+	if state != 100 {
+		return error('Unable to parse register list ${lexeme}')
+	}
+	return register_list.clone()
 }

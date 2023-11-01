@@ -1,4 +1,4 @@
-import biogba
+import biogba {Register}
 import biogba.arm_assembler {opcode_from_string}
 
 /*
@@ -264,6 +264,82 @@ fn test_assembler_ldm_writeback() {
 		u_bit: true
 		w_bit: true
 		register_list: [biogba.Register.r1]
+	}
+
+	assert opcode is biogba.LDMOpcode
+	if opcode is biogba.LDMOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDM Opcode with different register in register list
+
+*/
+fn test_assembler_ldm_register_list() {
+	opcode_string := 'LDMIA R1, {R14}'
+
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.LDMOpcode{
+		condition: biogba.OpcodeCondition.al
+		rn: 1
+		p_bit: false
+		u_bit: true
+		w_bit: false
+		register_list: [biogba.Register.r14]
+	}
+
+	assert opcode is biogba.LDMOpcode
+	if opcode is biogba.LDMOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDM Opcode multiple registers in register list
+
+*/
+fn test_assembler_ldm_register_list_multiple() {
+	opcode_string := 'LDMIA R1, {R2,R3,R5}'
+
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.LDMOpcode{
+		condition: biogba.OpcodeCondition.al
+		rn: 1
+		p_bit: false
+		u_bit: true
+		w_bit: false
+		register_list: [Register.r2, Register.r3, Register.r5]
+	}
+
+	assert opcode is biogba.LDMOpcode
+	if opcode is biogba.LDMOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDM Opcode with a simple range of registers 
+*/
+fn test_assembler_ldm_register_range() {
+	opcode_string := 'LDMIA R1, {R2-R8}'
+
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.LDMOpcode{
+		condition: biogba.OpcodeCondition.al
+		rn: 1
+		p_bit: false
+		u_bit: true
+		w_bit: false
+		register_list: [
+			Register.r2, 
+			Register.r3, 
+			Register.r4, 
+			Register.r5, 
+			Register.r6, 
+			Register.r7, 
+			Register.r8
+		]
 	}
 
 	assert opcode is biogba.LDMOpcode

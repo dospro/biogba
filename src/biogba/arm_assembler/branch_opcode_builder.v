@@ -30,7 +30,7 @@ pub fn BranchOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer) !O
 				state = match token.token_type {
 					.condition {
 						value := opcode_condition_from_string(token.lexeme) or {
-							return error('Invalud condition')
+							return error('Invalid condition')
 						}
 						builder.set_condition(value)
 						2

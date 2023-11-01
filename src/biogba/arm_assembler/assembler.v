@@ -26,7 +26,6 @@ pub fn opcode_from_string(opcode_text string) !biogba.Opcode {
 			DataProcessingOpcodeBuilder.parse_compare_opcode(opcode_name.lexeme, mut tokenizer)!
 		}
 		'LDM' {
-			println(opcode_text)
 			BlockDataTransferOpcodeBuilder.parse(opcode_name.lexeme, mut tokenizer)!
 		}
 		else {

@@ -1,0 +1,25 @@
+digraph g {
+    rankdir=LR;
+    node [shape = doublecircle];
+	node [shape = circle];
+
+  0 -> 1 [label="{"]
+  1 -> 1 [label=space]
+  1 -> 2 [label=R]
+  2 -> 3 [label=digit]
+  3 -> 3 [label=digit]
+  3 -> 1 [label=","]
+  3 -> 5 [label="-"]
+  3 -> 4 [label=space]
+  4 -> 4 [label=space]
+  4 -> F [label="}"]
+  3 -> F [label="}"]
+  5 -> 6 [label="R"]
+  6 -> 7 [label=digit]
+  7 -> 7 [label=digit]
+  7 -> 1 [label=","]
+  7 -> 4 [label=space]
+  7 -> F [label="}"]
+
+
+}
