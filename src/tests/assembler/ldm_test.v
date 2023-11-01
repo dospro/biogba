@@ -347,3 +347,66 @@ fn test_assembler_ldm_register_range() {
 		assert opcode == expected_opcode
 	}
 }
+
+/*
+Test LDM Opcode with 2 ranges of registers
+*/
+fn test_assembler_ldm_register_two_ranges() {
+	opcode_string := 'LDMIA R1, {R2-R7, R9-R12}'
+
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.LDMOpcode{
+		condition: biogba.OpcodeCondition.al
+		rn: 1
+		p_bit: false
+		u_bit: true
+		w_bit: false
+		register_list: [
+			Register.r2,
+			Register.r3,
+			Register.r4,
+			Register.r5,
+			Register.r6,
+			Register.r7,
+			Register.r9,
+			Register.r10,
+			Register.r11,
+			Register.r12,
+		]
+	}
+
+	assert opcode is biogba.LDMOpcode
+	if opcode is biogba.LDMOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDM Opcode with mixed elements in register list
+*/
+fn test_assembler_ldm_mixed_register_list() {
+	opcode_string := 'LDMIA R1, {R2, R4-R5, R7, R9, R14-R15}'
+
+	opcode := opcode_from_string(opcode_string) or { panic(err) }
+	expected_opcode := biogba.LDMOpcode{
+		condition: biogba.OpcodeCondition.al
+		rn: 1
+		p_bit: false
+		u_bit: true
+		w_bit: false
+		register_list: [
+			Register.r2,
+			Register.r4,
+			Register.r5,
+			Register.r7,
+			Register.r9,
+			Register.r14,
+			Register.r15
+		]
+	}
+
+	assert opcode is biogba.LDMOpcode
+	if opcode is biogba.LDMOpcode {
+		assert opcode == expected_opcode
+	}
+}
