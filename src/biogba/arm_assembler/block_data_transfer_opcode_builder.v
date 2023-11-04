@@ -201,7 +201,6 @@ pub fn (mut self BlockDataTransferOpcodeBuilder) build() !Opcode {
 }
 
 fn parse_register_list(lexeme string) ![]Register {
-	println(lexeme)
 	mut state := 0
 	mut register_list := []Register{}
 	mut position := 0
