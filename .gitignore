@@ -10,3 +10,10 @@ vls.log
 *.png
 *.gba
 *.o
+
+# Ignored folders
+.idea
+.vscode
+
+# For MAC
+.DS_Store
