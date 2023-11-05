@@ -247,7 +247,7 @@ rd = [address] >> 8
 */
 fn test_ldr_immediate_unaligned_1() {
 	mut memory := mocks.MemoryFake{}
-	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444])
+	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444]) // [22, 22, 11, 11, 44, 44, 33, 33]
 	mut cpu_state := CPUState{}
 	cpu_state.r[0] = 0 // Dest register
 	cpu_state.r[1] = 0x1 // Offset misaligned by 1
@@ -281,7 +281,7 @@ rd = [address] >> 8x2
 */
 fn test_ldr_immediate_unaligned_2() {
 	mut memory := mocks.MemoryFake{}
-	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444])
+	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444]) // [22, 22, 11, 11, 44, 44, 33, 33]
 	mut cpu_state := CPUState{}
 	cpu_state.r[0] = 0 // Dest register
 	cpu_state.r[1] = 0x0
@@ -303,7 +303,7 @@ fn test_ldr_immediate_unaligned_2() {
 	cpu.execute_opcode(opcode.as_hex())
 	result := cpu.get_state()
 
-	assert result.r[0] == 0x2222_1111 // Need to confirm the result
+	assert result.r[0] == 0x2222_1111
 }
 
 /*
@@ -315,7 +315,7 @@ rd = [address] >> 8x3
 */
 fn test_ldr_immediate_unaligned_3() {
 	mut memory := mocks.MemoryFake{}
-	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444])
+	memory.set_values32(0x0, [u32(0x1111_2222), 0x3333_4444]) // [22, 22, 11, 11, 44, 44, 33, 33]
 	mut cpu_state := CPUState{}
 	cpu_state.r[0] = 0 // Dest register
 	cpu_state.r[1] = 0x0
@@ -425,9 +425,11 @@ fn test_ldr_register_lsr() {
 /*
 Test LDR Opcode in register mode with ASR shift
 
-First we specify R2 with value and in the shift operand
-we specify a ASR with a shift of 1 which will produce
-an offset of 0x10 which is where the expected value is.
+The test starts with Rn=0x200(base) and Rm=0xFFFF_0000(offset)
+An arithmetic shift is applied to Rm whic will get 0xFFFF_FF00
+When adding 0x200 + 0xFFFF_FF00 we get 0x1_0000_0100
+Since the address bus is 32 bits, then only 0x100 is taken in
+consideration resulting in a a final address of 0x100
 */
 fn test_ldr_register_asr() {
 	mut memory := mocks.MemoryFake{}
@@ -505,10 +507,13 @@ fn test_ldr_register_ror() {
 /*
 Test LDRB opcode which is LDR but with B bit set
 
-El test comienzo con 4 bytes en memoria empezando en la
-dirección 0x1234_4321. Usando el modo inmediato, buscamos
-leer directamente la dirección 0x100 para obtener el byte
-0x12
+The test starts setting a word in memory address 0x100 with
+the value 0x1234_4321.
+The base address is 0xB0 and the offset address is 0x50 which
+when added will result in a final address of 0x100
+
+Considering tha little-endianess, the value at 0x100 should be de LSB
+byte 0x21 of the word
 */
 fn test_ldr_byte() {
 	mut memory := mocks.MemoryFake{}
