@@ -219,3 +219,43 @@ pub fn (opcode LDROpcode) as_hex() u32 {
 	}
 	return opcode_part | condition_part | rn_part | rd_part | p_part | u_part | b_part | w_part | address_part
 }
+
+type LDRSBHOffset = Register | u8
+
+pub struct LDRSBHOpcode {
+	condition OpcodeCondition = OpcodeCondition.al
+	rn u8
+	rd u8
+	p_bit bool = true
+	u_bit bool = true
+	w_bit bool = false
+	s_bit bool = false
+	h_bit bool = true
+	address LDRSBHOffset
+}
+
+pub fn (opcode LDRSBHOpcode) as_hex() u32 {
+	opcode_part := u32(0x0010_0090)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	rn_part := u32(opcode.rn) << 16
+	rd_part := u32(opcode.rd) << 12
+	p_part := if opcode.p_bit { u32(0x100_0000) } else { u32(0) }
+	u_part := if opcode.u_bit { u32(0x80_0000) } else { u32(0) }
+	w_part := if opcode.w_bit { u32(0x20_0000) } else { u32(0) }
+	s_part := if opcode.s_bit { u32(0x40) } else { u32(0) }
+	h_part := if opcode.h_bit { u32(0x20) } else { u32(0) }
+	address_part := match opcode.address {
+		u8 {
+			((u32(opcode.address) & 0xF0) << 4) | (opcode.address & 0xF) | 0x40_0000
+		}
+		Register {
+			u32(opcode.address)
+		}
+	}
+	
+
+	if !opcode.s_bit && !opcode.h_bit {
+		panic('Bad Opcode: S and H flags cannot be both zero.')
+	}
+	return condition_part | rn_part | rd_part | p_part | u_part | w_part | s_part | h_part | address_part | opcode_part
+}
