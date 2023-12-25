@@ -512,7 +512,7 @@ the value 0x1234_4321.
 The base address is 0xB0 and the offset address is 0x50 which
 when added will result in a final address of 0x100
 
-Considering tha little-endianess, the value at 0x100 should be de LSB
+Considering tha little-endianess, the value at 0x100 should be the LSB
 byte 0x21 of the word
 */
 fn test_ldr_byte() {

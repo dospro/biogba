@@ -1,6 +1,6 @@
 module biogba
 
-interface MemoryInterface {
+pub interface MemoryInterface {
 	read8(offset u32) u8
 	read32(offset u32) u32
 }
