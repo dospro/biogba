@@ -25,7 +25,7 @@ Returns the register number from a register string
 Example
 R15 -> 0xF
 */
-fn Register.from_string(register_string string) !u8 {
+pub fn Register.from_string(register_string string) !u8 {
 	return match register_string.to_lower() {
 		'r0' {0x0}
 		'r1' {0x1}
@@ -53,7 +53,7 @@ pub fn register_from_string(register_string string) !u8 {
 	return Register.from_string(register_string)!
 }
 
-fn Register.from_int(value int) !Register {
+pub fn Register.from_int(value int) !Register {
 	return match value {
 		0 {.r0}
 		1 {.r1}

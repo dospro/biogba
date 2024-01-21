@@ -191,7 +191,7 @@ pub fn (self RegisterOffset) as_hex() u32 {
 	return (u32(self.shift_value) << 7) | (u32(self.shift_type) << 5) | u32(self.rm)
 }
 
-type Offset = RegisterOffset | u16
+pub type Offset = RegisterOffset | u16
 
 pub struct LDROpcode {
 	condition OpcodeCondition = OpcodeCondition.al

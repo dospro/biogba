@@ -160,7 +160,7 @@ fn test_shift_name_rrx() {
 }
 
 fn test_simple_numeric_expression() {
-	opcode_string := 'ADC R0, R1, R2, LSR, #1F'
+	opcode_string := 'ADC R0, R1, R2, LSR#1F'
 	mut tokenizer := Tokenizer{text: opcode_string}
 	result := tokenizer.parse()
 	expected := [
@@ -251,6 +251,52 @@ fn test_ldm_s_bit_operator() {
 		Token{OpcodeTokenType.write_back, '!'}
 		Token{OpcodeTokenType.register_list, '{R2-R4}'}
 		Token{OpcodeTokenType.s_bit, '^'}
+	]
+	assert expected == result
+}
+
+fn test_separate_register_token() {
+	opcode_string := 'R14'
+	mut tokenizer := Tokenizer{text: opcode_string}
+	result := tokenizer.parse()
+	expected := [
+		Token{OpcodeTokenType.register, 'R14'}
+	]
+	assert expected == result
+}
+
+/*
+Open bracket is used to express and address
+We need to tokenize it so the syntactic parser
+can know when we are inside an address space
+*/
+fn test_brackets() {
+	opcode_string := '[R1]'
+	mut tokenizer := Tokenizer{text: opcode_string}
+	result := tokenizer.parse()
+	expected := [
+		Token{OpcodeTokenType.open_bracket, '['}
+		Token{OpcodeTokenType.register, 'R1'}
+		Token{OpcodeTokenType.close_bracket, ']'}
+	]
+	assert expected == result
+}
+
+/*
+Some expressions can specify a sign
+Opcode like LDR can use u bit to specify if
+the offset is added or subtracted to the base
+*/
+fn test_signed_expression() {
+	opcode_string := '[R1, -#10]'
+	mut tokenizer := Tokenizer{text: opcode_string}
+	result := tokenizer.parse()
+	expected := [
+		Token{OpcodeTokenType.open_bracket, '['}
+		Token{OpcodeTokenType.register, 'R1'}
+		Token{OpcodeTokenType.sign, '-'}
+		Token{OpcodeTokenType.expression, '#10'}
+		Token{OpcodeTokenType.close_bracket, ']'}
 	]
 	assert expected == result
 }

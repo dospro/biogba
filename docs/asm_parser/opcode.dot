@@ -54,6 +54,19 @@ digraph g {
   24 -> 25 [label="register_list"]
   25 -> 26 [label="^"]
 
+  0 -> 27 [label="LDR,STR"]
+  27 -> 28 [label="condition"]
+  28 -> 29 [label="B"]
+  29 -> 30 [label="T"]
+  30 -> 31 [label="register"]
+  31 -> 32 [label="address"]
+
+  29 -> 31 [label="register"]
+  28 -> 30 [label="T"]
+  27 -> 30 [label="T"]
+  27 -> 31 [label="register"]
+  27 -> 29 [label="B"]
+
 
 
 }

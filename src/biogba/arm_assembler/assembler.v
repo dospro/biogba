@@ -28,6 +28,9 @@ pub fn opcode_from_string(opcode_text string) !biogba.Opcode {
 		'LDM' {
 			BlockDataTransferOpcodeBuilder.parse(opcode_name.lexeme, mut tokenizer)!
 		}
+		'LDR' {
+			SingleDataTransferOpcodeBuilder.parse(opcode_name.lexeme, mut tokenizer)!
+		}
 		else {
 			return error('Opcode not implemented')
 		}

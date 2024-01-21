@@ -9,8 +9,8 @@ pub fn (mut self datatypes.Stack[int]) clear() {
 }
 
 pub const (
-	final_states     = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12]
-	opcode_names     = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B', 'CMN', 'CMP', 'EOR', 'LDM']
+	final_states     = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
+	opcode_names     = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B', 'CMN', 'CMP', 'EOR', 'LDM', 'LDR']
 	conditions       = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT',
 		'GT', 'LE', 'AL']
 	addressing_modes = ['IB', 'IA', 'DB', 'DA', 'ED', 'FD', 'EA', 'FA']
@@ -27,6 +27,9 @@ pub enum OpcodeTokenType {
 	expression
 	register_list
 	write_back
+	open_bracket
+	close_bracket
+	sign
 }
 
 pub struct Token {
@@ -79,6 +82,12 @@ pub fn (mut self Tokenizer) next() ?Token {
 					state = 8
 				} else if lexeme == '{' {
 					state = 9
+				} else if lexeme == "[" {
+					state = 13
+				} else if lexeme == "]" {
+					state = 14
+				} else if lexeme == "+" || lexeme == "-" {
+					state = 15
 				} else {
 					state = -1
 				}
@@ -163,6 +172,9 @@ pub fn (mut self Tokenizer) next() ?Token {
 		10 { Token{OpcodeTokenType.register_list, lexeme} }
 		11 { Token{OpcodeTokenType.write_back, lexeme} }
 		12 { Token{OpcodeTokenType.s_bit, lexeme} }
+		13 { Token{OpcodeTokenType.open_bracket, lexeme} }
+		14 { Token{OpcodeTokenType.close_bracket, lexeme} }
+		15 { Token{OpcodeTokenType.sign, lexeme} }
 		else { none }
 	}
 }
