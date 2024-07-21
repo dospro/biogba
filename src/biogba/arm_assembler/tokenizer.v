@@ -9,7 +9,7 @@ pub fn (mut self datatypes.Stack[int]) clear() {
 }
 
 pub const (
-	final_states     = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
+	final_states     = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
 	opcode_names     = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B', 'CMN', 'CMP', 'EOR', 'LDM', 'LDR']
 	conditions       = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT',
 		'GT', 'LE', 'AL']
@@ -30,6 +30,7 @@ pub enum OpcodeTokenType {
 	open_bracket
 	close_bracket
 	sign
+	t_mode
 }
 
 pub struct Token {
@@ -65,9 +66,13 @@ pub fn (mut self Tokenizer) next() ?Token {
 		match state {
 			0 {
 				if is_opcode_name(lexeme) {
+					// The opcode name can be a single letter (like B). But we should always check the longest pattern
+					// for example (BL). The it why we go to state 2
 					state = 2
 				} else if lexeme == 'S' {
 					state = 4
+				} else if lexeme == 'T' {
+					state = 16
 				} else if lexeme == '!' {
 					state = 11
 				} else if lexeme == '^' {
@@ -113,7 +118,7 @@ pub fn (mut self Tokenizer) next() ?Token {
 					state = -1
 				}
 			}
-			2, 3, 4, 5, 7 {
+			2, 3, 4, 5, 7, 16 {
 				if is_opcode_name(lexeme) {
 					state = 2
 				} else if is_condition(lexeme) {
@@ -175,6 +180,7 @@ pub fn (mut self Tokenizer) next() ?Token {
 		13 { Token{OpcodeTokenType.open_bracket, lexeme} }
 		14 { Token{OpcodeTokenType.close_bracket, lexeme} }
 		15 { Token{OpcodeTokenType.sign, lexeme} }
+		16 { Token{OpcodeTokenType.t_mode, lexeme} }
 		else { none }
 	}
 }

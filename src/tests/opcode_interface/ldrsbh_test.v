@@ -77,7 +77,7 @@ fn test_ldrh_rn() {
 }
 
 /*
-Test LDRH Opcode interface with Rn value
+Test LDRH Opcode interface with Rd value
 */
 fn test_ldrh_rd() {
 	opcode := LDRSBHOpcode{
