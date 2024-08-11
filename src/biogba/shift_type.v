@@ -14,7 +14,7 @@ pub fn ShiftType.from_u32(value u32) !ShiftType {
 		2 {.asr}
 		3 {.ror}
 		else {
-			error('Unknown opcode shift operand type for value $value')
+			error('Unknown opcode shift operand type for value ${value}')
 		}
 	}
 }

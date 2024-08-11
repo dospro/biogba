@@ -1,5 +1,5 @@
 import biogba
-import biogba.arm_assembler {opcode_from_string}
+import biogba.arm_assembler { opcode_from_string }
 
 /*
 Test B opcode with simple small address
@@ -45,7 +45,7 @@ Target address must have lower 2 bits set to 0
  */
 fn test_assembler_b_wrong_address() {
 	opcode_string := 'B #123'
-	opcode_from_string(opcode_string) or {return}
+	opcode_from_string(opcode_string) or { return }
 	assert false
 }
 

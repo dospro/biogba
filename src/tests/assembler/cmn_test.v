@@ -1,5 +1,5 @@
 import biogba
-import biogba.arm_assembler {opcode_from_string}
+import biogba.arm_assembler { opcode_from_string }
 
 /*
 Test CMN opcode
@@ -24,7 +24,6 @@ fn test_assembler_cmn() {
 	}
 }
 
-
 /*
 Test CMN opcode using register-immediate mode
 
@@ -40,7 +39,7 @@ fn test_assembler_cmn_register_immediate_mode() {
 		s_bit: true
 		shift_operand: biogba.ShiftOperandRegister{
 			rm: 3
-			register_shift : false
+			register_shift: false
 			shift_type: biogba.ShiftType.lsl
 			shift_value: 1
 		}
@@ -51,7 +50,6 @@ fn test_assembler_cmn_register_immediate_mode() {
 		assert opcode == expected_opcode
 	}
 }
-
 
 /*
 Test CMN opcode using register-immediate mode
@@ -68,7 +66,7 @@ fn test_assembler_cmn_register_register_mode() {
 		s_bit: true
 		shift_operand: biogba.ShiftOperandRegister{
 			rm: 3
-			register_shift : true
+			register_shift: true
 			shift_type: biogba.ShiftType.ror
 			shift_value: 8
 		}

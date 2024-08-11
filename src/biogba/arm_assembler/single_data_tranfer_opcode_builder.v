@@ -2,25 +2,24 @@ module arm_assembler
 
 import biogba {
 	LDROpcode,
+	Offset,
 	Opcode,
 	OpcodeCondition,
-	Register,
-	Offset,
 	opcode_condition_from_string,
 	register_from_string,
 }
 
 pub struct SingleDataTransferOpcodeBuilder {
 mut:
-	opcode_name   string
-	condition	  OpcodeCondition
-	rd            u8
-	rn            u8
-	p_bit         bool
-	u_bit         bool
-	b_bit         bool
-	w_bit         bool
-	address       Offset
+	opcode_name string
+	condition   OpcodeCondition
+	rd          u8
+	rn          u8
+	p_bit       bool
+	u_bit       bool
+	b_bit       bool
+	w_bit       bool
+	address     Offset
 }
 
 pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer) !Opcode {
@@ -37,11 +36,9 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 
 	mut state := 1
 	for state != bad_state && state != end_state {
-		token := tokenizer.next() or {
-			break
-		 }
-		 println(token)
-		 match state {
+		token := tokenizer.next() or { break }
+		println(token)
+		match state {
 			1 {
 				state = match token.token_type {
 					.condition {
@@ -79,7 +76,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 			2 {
 				state = match token.token_type {
 					.opcode_name {
-						// Not an actual opcode name. The token B is 
+						// Not an actual opcode name. The token B is
 						// parsed as an opcode, but in the second stage it is
 						// it is interpreted as Byte for LDR
 						if token.lexeme == 'B' {
@@ -119,7 +116,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						}
 						builder.rd = value
 						5
-					} 
+					}
 					else {
 						end_state
 					}
@@ -155,7 +152,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 			else {
 				state = end_state
 			}
-		 }
+		}
 	}
 	return LDROpcode{
 		condition: builder.condition

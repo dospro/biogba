@@ -88,11 +88,11 @@ pub fn (mut self Tokenizer) next() ?Token {
 					state = 8
 				} else if lexeme == '{' {
 					state = 9
-				} else if lexeme == "[" {
+				} else if lexeme == '[' {
 					state = 13
-				} else if lexeme == "]" {
+				} else if lexeme == ']' {
 					state = 14
-				} else if lexeme == "+" || lexeme == "-" {
+				} else if lexeme == '+' || lexeme == '-' {
 					state = 15
 				} else {
 					state = -1

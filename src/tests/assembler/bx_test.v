@@ -1,5 +1,5 @@
 import biogba
-import biogba.arm_assembler {opcode_from_string}
+import biogba.arm_assembler { opcode_from_string }
 
 /*
 Test BX opcode

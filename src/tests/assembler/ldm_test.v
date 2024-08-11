@@ -1,5 +1,5 @@
-import biogba {Register}
-import biogba.arm_assembler {opcode_from_string}
+import biogba { Register }
+import biogba.arm_assembler { opcode_from_string }
 
 /*
 LDM opcodes has different multiple modes
@@ -13,7 +13,7 @@ but 4 categories:
 - DA → FA
  If ! is present after register Rn it means writeback is
  enabled
- <registers> examples: 
+ <registers> examples:
 	{R0,R2-R7,R10}
 {^} If present, set bit S
 */
@@ -33,7 +33,7 @@ fn test_assembler_ldm_simple() {
 		rn: 0
 		p_bit: false
 		u_bit: true
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -54,7 +54,7 @@ fn test_assembler_ldm_condition() {
 		rn: 0
 		p_bit: false
 		u_bit: true
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -78,7 +78,7 @@ fn test_assembler_ldm_addressing_mode_ib() {
 		rn: 0
 		p_bit: true
 		u_bit: true
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -100,7 +100,7 @@ fn test_assembler_ldm_addressing_mode_ed() {
 		rn: 0
 		p_bit: true
 		u_bit: true
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -125,7 +125,7 @@ fn test_assembler_ldm_addressing_mode_db() {
 		rn: 0
 		p_bit: true
 		u_bit: false
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -148,7 +148,7 @@ fn test_assembler_ldm_addressing_mode_ea() {
 		rn: 0
 		p_bit: true
 		u_bit: false
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -173,7 +173,7 @@ fn test_assembler_ldm_addressing_mode_da() {
 		rn: 0
 		p_bit: false
 		u_bit: false
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -195,7 +195,7 @@ fn test_assembler_ldm_addressing_mode_fa() {
 		rn: 0
 		p_bit: false
 		u_bit: false
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -217,7 +217,7 @@ fn test_assembler_ldm_addressing_mode_fd() {
 		rn: 0
 		p_bit: false
 		u_bit: true
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -240,7 +240,7 @@ fn test_assembler_ldm_rn() {
 		rn: 13
 		p_bit: false
 		u_bit: true
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -263,7 +263,7 @@ fn test_assembler_ldm_writeback() {
 		p_bit: false
 		u_bit: true
 		w_bit: true
-		register_list: [biogba.Register.r1]
+		register_list: [Register.r1]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -286,7 +286,7 @@ fn test_assembler_ldm_register_list() {
 		p_bit: false
 		u_bit: true
 		w_bit: false
-		register_list: [biogba.Register.r14]
+		register_list: [Register.r14]
 	}
 
 	assert opcode is biogba.LDMOpcode
@@ -332,13 +332,13 @@ fn test_assembler_ldm_register_range() {
 		u_bit: true
 		w_bit: false
 		register_list: [
-			Register.r2, 
-			Register.r3, 
-			Register.r4, 
-			Register.r5, 
-			Register.r6, 
-			Register.r7, 
-			Register.r8
+			Register.r2,
+			Register.r3,
+			Register.r4,
+			Register.r5,
+			Register.r6,
+			Register.r7,
+			Register.r8,
 		]
 	}
 
@@ -401,7 +401,7 @@ fn test_assembler_ldm_mixed_register_list() {
 			Register.r7,
 			Register.r9,
 			Register.r14,
-			Register.r15
+			Register.r15,
 		]
 	}
 

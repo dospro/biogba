@@ -1,5 +1,5 @@
 import biogba
-import biogba.arm_assembler {opcode_from_string}
+import biogba.arm_assembler { opcode_from_string }
 
 /*
 Test CMP opcode
@@ -16,7 +16,7 @@ fn test_assembler_cmp() {
 		s_bit: true
 		shift_operand: biogba.ShiftOperandRegister{
 			rm: 4
-			register_shift : false
+			register_shift: false
 			shift_type: biogba.ShiftType.asr
 			shift_value: 0xF
 		}
@@ -27,4 +27,3 @@ fn test_assembler_cmp() {
 		assert opcode == expected_opcode
 	}
 }
-
