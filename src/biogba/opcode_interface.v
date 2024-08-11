@@ -3,6 +3,7 @@ module biogba
 pub type ShiftOperand = ShiftOperandImmediate | ShiftOperandRegister
 
 pub struct ShiftOperandImmediate {
+pub:
 	value  u8
 	rotate u8
 }
@@ -12,6 +13,7 @@ pub fn (shift_operand ShiftOperandImmediate) as_hex() u32 {
 }
 
 pub struct ShiftOperandRegister {
+pub:
 	rm             u8
 	register_shift bool
 	shift_type     ShiftType
@@ -91,6 +93,7 @@ pub fn (opcode ANDOpcode) as_hex() u32 {
 }
 
 pub struct BOpcode {
+pub:
 	condition      OpcodeCondition = OpcodeCondition.al
 	l_flag         bool = false
 	target_address u32
@@ -113,6 +116,7 @@ pub fn (opcode BICOpcode) as_hex() u32 {
 }
 
 pub struct BXOpcode {
+pub:
 	condition OpcodeCondition = OpcodeCondition.al
 	rm        u8
 }
@@ -125,6 +129,7 @@ pub fn (opcode BXOpcode) as_hex() u32 {
 
 pub struct CMNOpcode {
 	DataProcessingOpcode
+pub:
 	s_bit bool = true
 }
 
@@ -138,6 +143,7 @@ pub fn (opcode CMNOpcode) as_hex() u32 {
 
 pub struct CMPOpcode {
 	DataProcessingOpcode
+pub:
 	s_bit bool = true
 }
 
@@ -159,6 +165,7 @@ pub fn (opcode EOROpcode) as_hex() u32 {
 }
 
 pub struct LDMOpcode {
+pub:
 	condition     OpcodeCondition = OpcodeCondition.al
 	rn            u8
 	p_bit         bool
@@ -182,6 +189,7 @@ pub fn (opcode LDMOpcode) as_hex() u32 {
 }
 
 pub struct RegisterOffset {
+pub:
 	rm          u8
 	shift_type  ShiftType
 	shift_value u8
@@ -194,6 +202,7 @@ pub fn (self RegisterOffset) as_hex() u32 {
 pub type Offset = RegisterOffset | u16
 
 pub struct LDROpcode {
+pub:
 	condition OpcodeCondition = OpcodeCondition.al
 	rn        u8
 	rd        u8
@@ -223,6 +232,7 @@ pub fn (opcode LDROpcode) as_hex() u32 {
 type LDRSBHOffset = Register | u8
 
 pub struct LDRSBHOpcode {
+pub:
 	condition OpcodeCondition = OpcodeCondition.al
 	rn u8
 	rd u8

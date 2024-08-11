@@ -40,6 +40,7 @@ pub:
 }
 
 pub struct Tokenizer {
+pub:
 	text string
 mut:
 	text_position int = 0
