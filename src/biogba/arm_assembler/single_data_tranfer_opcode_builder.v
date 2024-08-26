@@ -37,6 +37,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 	mut state := 1
 	for state != bad_state && state != end_state {
 		token := tokenizer.next() or { break }
+		print(token)
 		match state {
 			1 {
 				state = match token.token_type {
@@ -142,6 +143,23 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						builder.rn = 15
 						builder.address = asm_state.get_real_address(value)
 						end_state
+					}
+					.open_bracket {
+						6
+					}
+					else {
+						end_state
+					}
+				}
+			}
+			6 {
+				state = match token.token_type {
+					.register {
+						value := register_from_string(token.lexeme) or {
+							return error('Invalid register')
+						}
+						builder.rn = value
+						7
 					}
 					else {
 						end_state

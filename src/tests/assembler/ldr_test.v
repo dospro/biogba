@@ -341,3 +341,28 @@ fn test_assembler_absolute_address() {
 		assert opcode == expected_opcode
 	}
 }
+
+/*
+Test LDR Opcode that uses Rn as the base address with an offset of zero
+*/
+fn test_assembler_ldr_preindex() {
+	opcode_string := 'LDR R3, [R4]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 3
+		rn: 4
+		p_bit: true
+		u_bit: true
+		b_bit: false
+		w_bit: false
+		address: u16(0)
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
