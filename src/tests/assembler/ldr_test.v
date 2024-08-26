@@ -1,7 +1,7 @@
 import biogba {
 	LDROpcode,
 }
-import biogba.arm_assembler { opcode_from_string }
+import biogba.arm_assembler { AsmState, Assembler, opcode_from_string }
 
 /*
 LDR Opcodes has the following format
@@ -281,10 +281,10 @@ This will be a PC relative, pre-indexed address. If the address
 is out of range, an error will be generated.
 
 Important notes when using absolute address:
-- The assemlber will try to generate address using R15 as a base.
+- The assembler will try to generate address using R15 as a base.
 So first it will calculate address - R15
 
-- Taking in consideration the prefetch piepline, R15 is 8 bytes already ahead
+- Taking in consideration the prefetch pipeline, R15 is 8 bytes already ahead
 So we need to revert those 8 bytes.
 offset = address - (R15 - 8)
 offset = address - R15 + 8
@@ -295,11 +295,37 @@ This set of tests only test for individual opcode execution. No context is consi
 To be able to test the behavior with the prefetch pipeline we need to test it
 with a defined CPU state.
 
+In this case LDR R5, #10 follows the next steps:
+- It will take the immediate expresion #10
+- Then it will read the current assembler state to get the value of PC (R15)
+- With the value of R15 it performs the calculation defined above
+- The result is written as the real u16 address
+
+The assembler follows a complex strategy for calculating the addresses
+of each instruction given that it depends on other states and on alignement.
+
+For that reason, the next set of tests will just inject a mocked PC
+so we can validate that the correct address is generated given a specific PC.
+
+*/
+
+/*
+Test LDR Opcode with immediate address.
+
+The test takes into account the state of PC, in this case 0x20
+and then calculates the final address #100 - #20 + 8 == 0xE8
 */
 fn test_assembler_absolute_address() {
-	opcode_string := 'LDR R5, #10'
+	opcode_string := 'LDR R5, #100'
 
-	opcode := opcode_from_string(opcode_string) or { panic(err) }
+	assembler := Assembler{
+		state: AsmState{
+			r15: 0x20
+		}
+	}
+
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
 	expected_opcode := LDROpcode{
 		condition: biogba.OpcodeCondition.al
 		rd: 5
@@ -308,7 +334,7 @@ fn test_assembler_absolute_address() {
 		u_bit: true
 		b_bit: false
 		w_bit: false
-		address: u16(0x10)
+		address: u16(0xE8)
 	}
 	assert opcode is LDROpcode
 	if opcode is LDROpcode {

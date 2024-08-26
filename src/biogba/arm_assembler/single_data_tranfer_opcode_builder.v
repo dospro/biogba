@@ -22,7 +22,7 @@ mut:
 	address     Offset
 }
 
-pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer) !Opcode {
+pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer, asm_state AsmState) !Opcode {
 	mut builder := SingleDataTransferOpcodeBuilder{
 		opcode_name: opcode_name
 		condition: OpcodeCondition.al
@@ -37,7 +37,6 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 	mut state := 1
 	for state != bad_state && state != end_state {
 		token := tokenizer.next() or { break }
-		println(token)
 		match state {
 			1 {
 				state = match token.token_type {
@@ -141,7 +140,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 					.expression {
 						value := u16(token.lexeme[1..].parse_uint(16, 32) or { return err })
 						builder.rn = 15
-						builder.address = u16(value)
+						builder.address = asm_state.get_real_address(value)
 						end_state
 					}
 					else {
