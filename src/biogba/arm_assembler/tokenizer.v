@@ -85,15 +85,13 @@ pub fn (mut self Tokenizer) next() ?Token {
 					lexeme = ''
 					state = 0
 				} else if lexeme == '#' {
-					state = 8
+					state = 80
 				} else if lexeme == '{' {
 					state = 9
 				} else if lexeme == '[' {
 					state = 13
 				} else if lexeme == ']' {
 					state = 14
-				} else if lexeme == '+' || lexeme == '-' {
-					state = 15
 				} else {
 					state = -1
 				}
@@ -146,6 +144,20 @@ pub fn (mut self Tokenizer) next() ?Token {
 			8 {
 				if !next_character.is_hex_digit() && next_character.ascii_str() != '_' {
 					state = -1
+				}
+			}
+			80 {
+				if next_character.ascii_str() == '-' || next_character.ascii_str() == '+' {
+					state = 81
+				} else if next_character.is_hex_digit() || next_character.ascii_str() == '_' {
+					state = 8
+				} else {
+					state = -1
+				}
+			}
+			81 {
+				if next_character.is_hex_digit() || next_character.ascii_str() == '_' {
+					state = 8
 				}
 			}
 			9 {

@@ -331,7 +331,7 @@ Opcode like LDR can use u bit to specify if
 the offset is added or subtracted to the base
 */
 fn test_signed_expression() {
-	opcode_string := '[R1, -#10]'
+	opcode_string := '[R1, #-10]'
 	mut tokenizer := Tokenizer{
 		text: opcode_string
 	}
@@ -339,8 +339,7 @@ fn test_signed_expression() {
 	expected := [
 		Token{OpcodeTokenType.open_bracket, '['},
 		Token{OpcodeTokenType.register, 'R1'},
-		Token{OpcodeTokenType.sign, '-'},
-		Token{OpcodeTokenType.expression, '#10'},
+		Token{OpcodeTokenType.expression, '#-10'},
 		Token{OpcodeTokenType.close_bracket, ']'},
 	]
 	assert expected == result

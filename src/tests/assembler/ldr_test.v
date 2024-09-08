@@ -13,7 +13,7 @@ LDR{cond}{B}{T} Rd,<Address>
 <Address> has multiple modes
 - expression	which is an immediate expression. It will use R15(PC) as the base register
 - [Rn]			Preindex with an offset of zero. Rn is the base register
-- [Rn,<#{+/-}expression>]{!} Preindex with a signed exspression and writeback
+- [Rn,<#{+/-}expression>]{!} Preindex with a signed expression and writeback
 - [Rn,{+/-}Rm{,<shift>#exp}]{!} Preindex using signed register mode as offset which can be added a shift mode
 - [Rn], exp			Post-index mode. exp can be the same as preindex but outside []
 
@@ -313,7 +313,8 @@ so we can validate that the correct address is generated given a specific PC.
 Test LDR Opcode with immediate address.
 
 The test takes into account the state of PC, in this case 0x20
-and then calculates the final address #100 - #20 + 8 == 0xE8
+then it adds 8 bytes for the fetching pipeline resulting in 0x28
+Finally the distance between offset 0x28 and 0x100 is 0xD8
 */
 fn test_assembler_absolute_address() {
 	opcode_string := 'LDR R5, #100'
@@ -334,7 +335,67 @@ fn test_assembler_absolute_address() {
 		u_bit: true
 		b_bit: false
 		w_bit: false
-		address: u16(0xE8)
+		address: u16(0xD8)
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode with immediate address outside limit.
+
+LDR Opcode only has 11 bits for absolute address (4096)
+The test will try an offset larger than 4095. It also considers the 
+fetch pipeline. So the address can go up to 4095+8 = 0x1007
+
+To test the whole calculation, the test takes 0x20 as the base.
+In this case, having a value greater than 0x1007+0x20 should fail the assembly
+*/
+fn test_assembler_absolute_address_limit() {
+	opcode_string := 'LDR R5, #1028'
+
+	assembler := Assembler{
+		state: AsmState{
+			r15: 0x20
+		}
+	}
+
+	opcode := assembler.parse_opcode(opcode_string) or { return }
+	assert false
+}
+
+/*
+Test LDR Opcode with negative immediate address.
+
+The address is interpreted as positive but the u flag is set
+to false.
+
+In the case the base (r15) is 0x300 and if we take in consideration
+the 8 bytes ahead we know it is going to be 0x308.
+The distance from 0x308 to 0x100 is 0x208
+*/
+fn test_assembler_negative_absolute_address() {
+	opcode_string := 'LDR R5, #100'
+
+	assembler := Assembler{
+		state: AsmState{
+			r15: 0x300
+		}
+	}
+
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 5
+		rn: 15
+		p_bit: true
+		u_bit: false
+		b_bit: false
+		w_bit: false
+		address: u16(0x208)
 	}
 	assert opcode is LDROpcode
 	if opcode is LDROpcode {
@@ -360,6 +421,56 @@ fn test_assembler_ldr_preindex() {
 		b_bit: false
 		w_bit: false
 		address: u16(0)
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode that uses Rn as the base address with a positive offset
+*/
+fn test_assembler_ldr_preindex_with_offset() {
+	opcode_string := 'LDR R6, [R7, #50]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 6
+		rn: 7
+		p_bit: true
+		u_bit: true
+		b_bit: false
+		w_bit: false
+		address: u16(0x50)
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode that uses Rn as the base address with a negative sign
+*/
+fn test_assembler_ldr_preindex_with_negative_offset() {
+	opcode_string := 'LDREQ R11, [R10, #-30]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.eq
+		rd: 11
+		rn: 10
+		p_bit: true
+		u_bit: false
+		b_bit: false
+		w_bit: false
+		address: u16(0x30)
 	}
 	assert opcode is LDROpcode
 	if opcode is LDROpcode {

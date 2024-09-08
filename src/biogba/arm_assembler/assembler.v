@@ -22,7 +22,7 @@ taking PC as the base and calculating the offset. It also considers prefetched
 instructions which normally are 8 words ahead
 */
 pub fn (self AsmState) get_real_address(value u16) u16 {
-	return u16(value - self.r15 + 8)
+	return u16(value - self.r15 - 8)
 }
 pub struct Assembler {
 pub mut:

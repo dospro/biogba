@@ -28,6 +28,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 		condition: OpcodeCondition.al
 		rn: 1
 		p_bit: true
+		u_bit: true
 		b_bit: false
 		address: u16(0)
 	}
@@ -37,7 +38,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 	mut state := 1
 	for state != bad_state && state != end_state {
 		token := tokenizer.next() or { break }
-		print(token)
+		println('${state} ${token}')
 		match state {
 			1 {
 				state = match token.token_type {
@@ -139,9 +140,22 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 			5 {
 				state = match token.token_type {
 					.expression {
-						value := u16(token.lexeme[1..].parse_uint(16, 32) or { return err })
+						value := token.lexeme[1..].parse_int(16, 32) or { return err }
 						builder.rn = 15
-						builder.address = asm_state.get_real_address(value)
+						if value < 0 {
+							return error('Absolute offset cannot be a negative value')
+						}
+						mut real_address := u16(0)
+						if asm_state.r15 > value {
+							real_address = u16(asm_state.r15 - value + 8)
+							builder.u_bit = false
+						} else {
+							real_address = asm_state.get_real_address(u16(value))
+						}
+						if real_address >= 0x1000 {
+							return error('Absolute address cannot be bigger than 11 bits. Value: ${value}')
+						}
+						builder.address = real_address
 						end_state
 					}
 					.open_bracket {
@@ -166,17 +180,50 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 					}
 				}
 			}
+			7 {
+				state = match token.token_type {
+					.close_bracket {
+						end_state
+					}
+					.expression {
+						value := token.lexeme[1..].parse_int(16, 32) or { return err }
+						if value >= 0x1000 || value <= -0x1000 {
+							return error('Absolute address cannot be bigger than 12 bits. Value: ${value}')
+						}
+
+						if value < 0 {
+							builder.address = u16(-value)
+							builder.u_bit = false
+						} else {
+							builder.address = u16(value)
+							builder.u_bit = true
+						}
+						8
+					}
+					.sign {
+						println('Got a sign, value is negative')
+						bad_state
+					}
+					else {
+						bad_state
+					}
+				}
+			}
 			else {
 				state = end_state
 			}
 		}
+	}
+	println('final state was ${state}')
+	if state != end_state {
+		return error('Did not reach a final state')
 	}
 	return LDROpcode{
 		condition: builder.condition
 		rd: builder.rd
 		rn: builder.rn
 		p_bit: builder.p_bit
-		u_bit: true
+		u_bit: builder.u_bit
 		b_bit: builder.b_bit
 		w_bit: builder.w_bit
 		address: builder.address
