@@ -3,6 +3,7 @@ module arm_assembler
 import biogba {
 	LDROpcode,
 	Offset,
+	RegisterOffset,
 	Opcode,
 	OpcodeCondition,
 	opcode_condition_from_string,
@@ -30,6 +31,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 		p_bit: true
 		u_bit: true
 		b_bit: false
+		w_bit: false
 		address: u16(0)
 	}
 	end_state := -1
@@ -78,7 +80,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 				state = match token.token_type {
 					.opcode_name {
 						// Not an actual opcode name. The token B is
-						// parsed as an opcode, but in the second stage it is
+						// parsed as an opcode, but in the second stage
 						// it is interpreted as Byte for LDR
 						if token.lexeme == 'B' {
 							builder.b_bit = true
@@ -156,7 +158,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 							return error('Absolute address cannot be bigger than 11 bits. Value: ${value}')
 						}
 						builder.address = real_address
-						end_state
+						state // Final state
 					}
 					.open_bracket {
 						6
@@ -200,11 +202,37 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						}
 						8
 					}
-					.sign {
-						println('Got a sign, value is negative')
-						bad_state
+					.register {
+						value := register_from_string(token.lexeme) or {
+							return error('Invalid register')
+						}
+						// From here the opcode now uses a register offset
+						builder.address = RegisterOffset{
+							rm: value
+						}
+						8
 					}
 					else {
+						bad_state
+					}
+				}
+			}
+			8 {
+				state = match token.token_type {
+					.close_bracket {
+						9
+					}
+					else {
+						bad_state
+					}
+				}
+			}
+			9 {
+				state = match token.token_type {
+					.write_back {
+						builder.w_bit = true
+						end_state
+					} else {
 						bad_state
 					}
 				}
@@ -215,6 +243,12 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 		}
 	}
 	println('final state was ${state}')
+	// There state that are in the middle of the state machine which
+	// are also end states. If the parser stopped at one of those, it
+	// is considered an end_state.
+	if state == 9 || state == 5 {
+		state = end_state
+	}
 	if state != end_state {
 		return error('Did not reach a final state')
 	}

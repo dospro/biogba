@@ -1,5 +1,6 @@
 import biogba {
 	LDROpcode,
+	RegisterOffset
 }
 import biogba.arm_assembler { AsmState, Assembler, opcode_from_string }
 
@@ -372,7 +373,7 @@ Test LDR Opcode with negative immediate address.
 The address is interpreted as positive but the u flag is set
 to false.
 
-In the case the base (r15) is 0x300 and if we take in consideration
+In this case the base (r15) is 0x300 and if we take in consideration
 the 8 bytes ahead we know it is going to be 0x308.
 The distance from 0x308 to 0x100 is 0x208
 */
@@ -471,6 +472,60 @@ fn test_assembler_ldr_preindex_with_negative_offset() {
 		b_bit: false
 		w_bit: false
 		address: u16(0x30)
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode with Rn as base and an offset expression with writeback
+*/
+fn test_assembler_ldr_preindex_with_writeback() {
+	opcode_string := 'LDREQ R1, [R2, #FFF]!'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.eq
+		rd: 1
+		rn: 2
+		p_bit: true
+		u_bit: true
+		b_bit: false
+		w_bit: true
+		address: u16(0xFFF)
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode with register offset
+*/
+fn test_assembler_ldr_preindex_register_offset() {
+	opcode_string := 'LDR R14, [R13, R11]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 14
+		rn: 13
+		p_bit: true
+		u_bit: true
+		b_bit: false
+		w_bit: false
+		address: RegisterOffset{
+			rm: 11
+			shift_type: .lsl
+			shift_value: 0
+		}
 	}
 	assert opcode is LDROpcode
 	if opcode is LDROpcode {

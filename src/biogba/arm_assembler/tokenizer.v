@@ -92,6 +92,8 @@ pub fn (mut self Tokenizer) next() ?Token {
 					state = 13
 				} else if lexeme == ']' {
 					state = 14
+				} else if lexeme == '-' || lexeme == '+' {
+					state = 15
 				} else {
 					state = -1
 				}

@@ -344,3 +344,25 @@ fn test_signed_expression() {
 	]
 	assert expected == result
 }
+
+
+/*
+Some offsets are specified as registers which can have
+a negative sign. In this case the negative sign must be
+interpreted as a separate token
+*/
+fn test_negative_sign() {
+	opcode_string := '[R2, -R14]'
+	mut tokenizer := Tokenizer{
+		text: opcode_string
+	}
+	result := tokenizer.parse()
+	expected := [
+		Token{OpcodeTokenType.open_bracket, '['}
+		Token{OpcodeTokenType.register, 'R2'}
+		Token{OpcodeTokenType.sign, '-'}
+		Token{OpcodeTokenType.register, 'R14'}
+		Token{OpcodeTokenType.close_bracket, ']'}
+	]
+	assert expected == result
+}
