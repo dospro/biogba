@@ -3,9 +3,10 @@ module arm_assembler
 import biogba {
 	LDROpcode,
 	Offset,
-	RegisterOffset,
 	Opcode,
 	OpcodeCondition,
+	RegisterOffset,
+	ShiftType,
 	opcode_condition_from_string,
 	register_from_string,
 }
@@ -23,6 +24,13 @@ mut:
 	address     Offset
 }
 
+pub struct RegisterOffsetBuilder {
+pub mut:
+	rm          u8
+	shift_type  ShiftType
+	shift_value u8
+}
+
 pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer, asm_state AsmState) !Opcode {
 	mut builder := SingleDataTransferOpcodeBuilder{
 		opcode_name: opcode_name
@@ -34,6 +42,9 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 		w_bit: false
 		address: u16(0)
 	}
+
+	mut address_builder := RegisterOffsetBuilder{}
+	mut with_register_offset := false
 	end_state := -1
 	bad_state := 100
 
@@ -202,14 +213,25 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						}
 						8
 					}
+					.sign {
+						if token.lexeme == '-' {
+							builder.u_bit = false
+							9
+						} else if token.lexeme == '+' {
+							builder.u_bit = true
+							9
+						}
+						 else {
+							bad_state
+						}
+					}
 					.register {
 						value := register_from_string(token.lexeme) or {
 							return error('Invalid register')
 						}
 						// From here the opcode now uses a register offset
-						builder.address = RegisterOffset{
-							rm: value
-						}
+						address_builder.rm = value
+						with_register_offset = true
 						8
 					}
 					else {
@@ -220,7 +242,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 			8 {
 				state = match token.token_type {
 					.close_bracket {
-						9
+						11
 					}
 					else {
 						bad_state
@@ -229,10 +251,26 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 			}
 			9 {
 				state = match token.token_type {
+					.register {
+						value := register_from_string(token.lexeme) or {
+							return error('Invalid register')
+						}
+						address_builder.rm = value
+						with_register_offset = true
+						8
+					}
+					else {
+						bad_state
+					}
+				}
+			}
+			11 {
+				state = match token.token_type {
 					.write_back {
 						builder.w_bit = true
 						end_state
-					} else {
+					}
+					else {
 						bad_state
 					}
 				}
@@ -246,11 +284,20 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 	// There state that are in the middle of the state machine which
 	// are also end states. If the parser stopped at one of those, it
 	// is considered an end_state.
-	if state == 9 || state == 5 {
+	if state == 11 || state == 5 {
 		state = end_state
 	}
 	if state != end_state {
 		return error('Did not reach a final state')
+	}
+
+	// We may be able to get rid of this boolean flag
+	if with_register_offset {
+		builder.address = RegisterOffset {
+			rm: address_builder.rm
+			shift_type: address_builder.shift_type
+			shift_value: address_builder.shift_value
+		}
 	}
 	return LDROpcode{
 		condition: builder.condition

@@ -532,3 +532,63 @@ fn test_assembler_ldr_preindex_register_offset() {
 		assert opcode == expected_opcode
 	}
 }
+
+/*
+Test LDR Opcode with negative register offset
+*/
+fn test_assembler_ldr_preindex_negative_register_offset() {
+	opcode_string := 'LDR R9, [R8, -R1]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 9
+		rn: 8
+		p_bit: true
+		u_bit: false
+		b_bit: false
+		w_bit: false
+		address: RegisterOffset{
+			rm: 1
+			shift_type: .lsl
+			shift_value: 0
+		}
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode with explicit positive uisng in register offset
+
+This case is very rare, but we are supporting for completeness
+*/
+fn test_assembler_ldr_preindex_explicit_positive_register_offset() {
+	opcode_string := 'LDR R9, [R8, +R1]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 9
+		rn: 8
+		p_bit: true
+		u_bit: true
+		b_bit: false
+		w_bit: false
+		address: RegisterOffset{
+			rm: 1
+			shift_type: .lsl
+			shift_value: 0
+		}
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
