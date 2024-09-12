@@ -1,6 +1,6 @@
 import biogba {
 	LDROpcode,
-	RegisterOffset
+	RegisterOffset,
 }
 import biogba.arm_assembler { AsmState, Assembler, opcode_from_string }
 
@@ -348,7 +348,7 @@ fn test_assembler_absolute_address() {
 Test LDR Opcode with immediate address outside limit.
 
 LDR Opcode only has 11 bits for absolute address (4096)
-The test will try an offset larger than 4095. It also considers the 
+The test will try an offset larger than 4095. It also considers the
 fetch pipeline. So the address can go up to 4095+8 = 0x1007
 
 To test the whole calculation, the test takes 0x20 as the base.
@@ -585,6 +585,38 @@ fn test_assembler_ldr_preindex_explicit_positive_register_offset() {
 			rm: 1
 			shift_type: .lsl
 			shift_value: 0
+		}
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode preindex with shift
+
+Note: The normal notation for shifts is without spaces (ex: LSR#4).
+Technically the assembler should be able to support with space or commas.
+*/
+fn test_assembler_ldr_preindex_with_shift() {
+	opcode_string := 'LDR R9, [R8, R1 LSR#4]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 9
+		rn: 8
+		p_bit: true
+		u_bit: true
+		b_bit: false
+		w_bit: false
+		address: RegisterOffset{
+			rm: 1
+			shift_type: .lsr
+			shift_value: 4
 		}
 	}
 	assert opcode is LDROpcode

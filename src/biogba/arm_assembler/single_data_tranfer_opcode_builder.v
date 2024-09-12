@@ -220,8 +220,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						} else if token.lexeme == '+' {
 							builder.u_bit = true
 							9
-						}
-						 else {
+						} else {
 							bad_state
 						}
 					}
@@ -243,6 +242,12 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 				state = match token.token_type {
 					.close_bracket {
 						11
+					}
+					.shift_name {
+						address_builder.shift_type = ShiftType.from_string(token.lexeme) or { 
+							return error('Invalid shift type ${token.lexeme}')
+						 }
+						12
 					}
 					else {
 						bad_state
@@ -275,6 +280,28 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 					}
 				}
 			}
+			12 {
+				state = match token.token_type {
+					.expression {
+						value := token.lexeme[1..].parse_int(16, 32) or { return err }
+						address_builder.shift_value = u8(value)
+						13
+					}
+					else {
+						bad_state
+					}
+				}
+			}
+			13 {
+				state = match token.token_type {
+					.close_bracket {
+						11
+					}
+					else {
+						bad_state
+					}
+				}
+			}
 			else {
 				state = end_state
 			}
@@ -293,7 +320,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 
 	// We may be able to get rid of this boolean flag
 	if with_register_offset {
-		builder.address = RegisterOffset {
+		builder.address = RegisterOffset{
 			rm: address_builder.rm
 			shift_type: address_builder.shift_type
 			shift_value: address_builder.shift_value
