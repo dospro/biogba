@@ -196,7 +196,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 			7 {
 				state = match token.token_type {
 					.close_bracket {
-						end_state
+						14 // End state or possible post index expression
 					}
 					.expression {
 						value := token.lexeme[1..].parse_int(16, 32) or { return err }
@@ -244,9 +244,9 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						11
 					}
 					.shift_name {
-						address_builder.shift_type = ShiftType.from_string(token.lexeme) or { 
+						address_builder.shift_type = ShiftType.from_string(token.lexeme) or {
 							return error('Invalid shift type ${token.lexeme}')
-						 }
+						}
 						12
 					}
 					else {
@@ -284,6 +284,9 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 				state = match token.token_type {
 					.expression {
 						value := token.lexeme[1..].parse_int(16, 32) or { return err }
+						if value < 0 || value >= 256 {
+							return error('Shift value cannot be longer than 8 bits')
+						}
 						address_builder.shift_value = u8(value)
 						13
 					}
@@ -302,6 +305,95 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 					}
 				}
 			}
+			14 {
+				state = match token.token_type {
+					.expression {
+						value := token.lexeme[1..].parse_int(16, 32) or { return err }
+						if value >= 0x1000 || value <= -0x1000 {
+							return error('Absolute address cannot be bigger than 12 bits. Value: ${value}')
+						}
+
+						if value < 0 {
+							builder.address = u16(-value)
+							builder.u_bit = false
+						} else {
+							builder.address = u16(value)
+							builder.u_bit = true
+						}
+						builder.p_bit = false
+						end_state
+					}
+					.register {
+						value := register_from_string(token.lexeme) or {
+							return error('Invalid register')
+						}
+						with_register_offset = true
+						address_builder.rm = value
+						builder.p_bit = false
+						15
+					}
+					.sign {
+						if token.lexeme == '-' {
+							builder.u_bit = false
+							with_register_offset = true
+							builder.p_bit = false
+							17
+						} else if token.lexeme == '+' {
+							builder.u_bit = true
+							with_register_offset = true
+							builder.p_bit = false
+							17
+						} else {
+							bad_state
+						}
+					}
+					else {
+						bad_state
+					}
+				}
+			}
+			15 {
+				state = match token.token_type {
+					.shift_name {
+						address_builder.shift_type = ShiftType.from_string(token.lexeme) or {
+							return error('Invalid shift type ${token.lexeme}')
+						}
+						16
+					}
+					else {
+						bad_state
+					}
+				}
+			}
+			16 {
+				state = match token.token_type {
+					.expression {
+						value := token.lexeme[1..].parse_int(16, 32) or { return err }
+						if value < 0 || value >= 256 {
+							return error('Shift value cannot be longer than 8 bits')
+						}
+						address_builder.shift_value = u8(value)
+						end_state
+					}
+					else {
+						bad_state
+					}
+				}
+			}
+			17 {
+				state = match token.token_type {
+					.register {
+						value := register_from_string(token.lexeme) or {
+							return error('Invalid register')
+						}
+						address_builder.rm = value
+						15
+					}
+					else {
+						bad_state
+					}
+				}
+			}
 			else {
 				state = end_state
 			}
@@ -311,7 +403,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 	// There state that are in the middle of the state machine which
 	// are also end states. If the parser stopped at one of those, it
 	// is considered an end_state.
-	if state == 11 || state == 5 {
+	if state == 11 || state == 5 || state == 14 || state == 15 {
 		state = end_state
 	}
 	if state != end_state {

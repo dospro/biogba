@@ -624,3 +624,182 @@ fn test_assembler_ldr_preindex_with_shift() {
 		assert opcode == expected_opcode
 	}
 }
+
+/*
+Test LDR Opcode preindex with shift fails when shift
+amount is over 8 bits
+*/
+fn test_assembler_ldr_preindex_with_shift_overflow() {
+	opcode_string := 'LDR R9, [R8, R1 LSR#280]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { return }
+
+	assert false
+}
+
+/*
+Test LDR Opcode preindex with shift and writeback
+*/
+fn test_assembler_ldr_preindex_with_shift_and_writeback() {
+	opcode_string := 'LDRCCB R1, [R2, -R3, ROR#50]!'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.cc
+		rd: 1
+		rn: 2
+		p_bit: true
+		u_bit: false
+		b_bit: true
+		w_bit: true
+		address: RegisterOffset{
+			rm: 3
+			shift_type: .ror
+			shift_value: 0x50
+		}
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode post-index with expression
+*/
+fn test_assembler_ldr_postindex_with_expression() {
+	opcode_string := 'LDR R1, [R2], #FFF'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 1
+		rn: 2
+		p_bit: false
+		u_bit: true
+		b_bit: false
+		w_bit: false
+		address: u16(0xFFF)
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode post-index with negative expression
+*/
+fn test_assembler_ldr_postindex_with_negative_expression() {
+	opcode_string := 'LDR R1, [R2], #-100'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 1
+		rn: 2
+		p_bit: false
+		u_bit: false
+		b_bit: false
+		w_bit: false
+		address: u16(0x100)
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode post-index with register offset
+*/
+fn test_assembler_ldr_postindex_with_register_offset() {
+	opcode_string := 'LDR R1, [R2], R3'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 1
+		rn: 2
+		p_bit: false
+		u_bit: true
+		b_bit: false
+		w_bit: false
+		address: RegisterOffset{
+			rm: 3
+			shift_type: .lsl
+			shift_value: 0
+		}
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode post-index with register offset
+*/
+fn test_assembler_ldr_postindex_with_negative_register_offset() {
+	opcode_string := 'LDR R1, [R2], -R4'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 1
+		rn: 2
+		p_bit: false
+		u_bit: false
+		b_bit: false
+		w_bit: false
+		address: RegisterOffset{
+			rm: 4
+			shift_type: .lsl
+			shift_value: 0
+		}
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode post-index with shifted register
+*/
+fn test_assembler_ldr_postindex_with_shifted_register_offset() {
+	opcode_string := 'LDR R1, [R2], R3, ASR#FF'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDROpcode{
+		condition: biogba.OpcodeCondition.al
+		rd: 1
+		rn: 2
+		p_bit: false
+		u_bit: true
+		b_bit: false
+		w_bit: false
+		address: RegisterOffset{
+			rm: 3
+			shift_type: .asr
+			shift_value: u8(0xFF)
+		}
+	}
+	assert opcode is LDROpcode
+	if opcode is LDROpcode {
+		assert opcode == expected_opcode
+	}
+}
