@@ -51,7 +51,7 @@ pub fn (self Assembler) parse_opcode(opcode_text string) !biogba.Opcode {
 		'LDM' {
 			BlockDataTransferOpcodeBuilder.parse(opcode_name.lexeme, mut tokenizer)!
 		}
-		'LDR' {
+		'LDR', 'LDRH' {
 			SingleDataTransferOpcodeBuilder.parse(opcode_name.lexeme, mut tokenizer, self.state)!
 		}
 		else {

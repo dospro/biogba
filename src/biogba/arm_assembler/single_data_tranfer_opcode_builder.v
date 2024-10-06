@@ -2,13 +2,16 @@ module arm_assembler
 
 import biogba {
 	LDROpcode,
+	LDRSBHOpcode,
 	Offset,
+	LDRSBHOffset,
 	Opcode,
 	OpcodeCondition,
+	Register
 	RegisterOffset,
 	ShiftType,
 	opcode_condition_from_string,
-	register_from_string,
+	register_from_string
 }
 
 pub struct SingleDataTransferOpcodeBuilder {
@@ -21,14 +24,83 @@ mut:
 	u_bit       bool
 	b_bit       bool
 	w_bit       bool
-	address     Offset
+	s_bit       bool
+	h_bit       bool
+	ldr_address Offset
+	ldrsbh_address LDRSBHOffset
 }
 
-pub struct RegisterOffsetBuilder {
-pub mut:
-	rm          u8
-	shift_type  ShiftType
-	shift_value u8
+pub fn (self SingleDataTransferOpcodeBuilder) build() !Opcode {
+	 match self.opcode_name {
+		'LDR' {
+			return LDROpcode{
+				condition: self.condition
+				rd: self.rd
+				rn: self.rn
+				p_bit: self.p_bit
+				u_bit: self.u_bit
+				b_bit: self.b_bit
+				w_bit: self.w_bit
+				address: self.ldr_address
+			}
+		}
+		'LDRH' {
+			return LDRSBHOpcode{
+				condition: self.condition
+				rd: self.rd
+				rn: self.rn
+				p_bit: self.p_bit
+				u_bit: self.u_bit
+				w_bit: self.w_bit
+				s_bit: self.s_bit
+				h_bit: true
+				address: u8(0)
+			}
+		}
+		else {
+			return error('Invalid opcode name ${self.opcode_name}')
+		}
+	}
+}
+
+pub fn (mut self SingleDataTransferOpcodeBuilder) set_rm(value u16) SingleDataTransferOpcodeBuilder {
+	if self.opcode_name == 'LDR'{
+		if mut self.ldr_address is u16 {
+			self.ldr_address = RegisterOffset {
+				rm: u8(value)
+			}
+		} else if mut self.ldr_address is RegisterOffset{
+			self.ldr_address.rm = u8(value)
+		}
+	}
+	return self
+}
+
+pub fn (mut self SingleDataTransferOpcodeBuilder) set_shift_type(value ShiftType) SingleDataTransferOpcodeBuilder {
+	if self.opcode_name == 'LDR'{
+		if mut self.ldr_address is u16 {
+			self.ldr_address = RegisterOffset {
+				shift_type: value
+			}
+		} else if mut self.ldr_address is RegisterOffset{
+			self.ldr_address.shift_type = value
+		}
+	}
+	return self
+}
+
+pub fn (mut self SingleDataTransferOpcodeBuilder) set_shift_value(value u8) SingleDataTransferOpcodeBuilder {
+	if self.opcode_name == 'LDR'{
+		if mut self.ldr_address is u16 {
+			self.ldr_address = RegisterOffset {
+				shift_value: value
+			}
+		} else if mut self.ldr_address is RegisterOffset{
+			self.ldr_address.shift_value = value
+		}
+	}
+	return self
+
 }
 
 pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer, asm_state AsmState) !Opcode {
@@ -40,11 +112,10 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 		u_bit: true
 		b_bit: false
 		w_bit: false
-		address: u16(0)
+		ldr_address: u16(0)
+		ldrsbh_address: u8(0)
 	}
 
-	mut address_builder := RegisterOffsetBuilder{}
-	mut with_register_offset := false
 	end_state := -1
 	bad_state := 100
 
@@ -168,7 +239,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						if real_address >= 0x1000 {
 							return error('Absolute address cannot be bigger than 11 bits. Value: ${value}')
 						}
-						builder.address = real_address
+						builder.ldr_address = real_address
 						state // Final state
 					}
 					.open_bracket {
@@ -205,10 +276,10 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						}
 
 						if value < 0 {
-							builder.address = u16(-value)
+							builder.ldr_address = u16(-value)
 							builder.u_bit = false
 						} else {
-							builder.address = u16(value)
+							builder.ldr_address = u16(value)
 							builder.u_bit = true
 						}
 						8
@@ -229,8 +300,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 							return error('Invalid register')
 						}
 						// From here the opcode now uses a register offset
-						address_builder.rm = value
-						with_register_offset = true
+						builder.set_rm(value)
 						8
 					}
 					else {
@@ -244,9 +314,10 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						11
 					}
 					.shift_name {
-						address_builder.shift_type = ShiftType.from_string(token.lexeme) or {
+						shift_type := ShiftType.from_string(token.lexeme) or {
 							return error('Invalid shift type ${token.lexeme}')
 						}
+						builder.set_shift_type(shift_type)
 						12
 					}
 					else {
@@ -260,8 +331,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						value := register_from_string(token.lexeme) or {
 							return error('Invalid register')
 						}
-						address_builder.rm = value
-						with_register_offset = true
+						builder.set_rm(value)
 						8
 					}
 					else {
@@ -287,7 +357,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						if value < 0 || value >= 256 {
 							return error('Shift value cannot be longer than 8 bits')
 						}
-						address_builder.shift_value = u8(value)
+						builder.set_shift_value(u8(value))
 						13
 					}
 					else {
@@ -314,10 +384,10 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						}
 
 						if value < 0 {
-							builder.address = u16(-value)
+							builder.ldr_address = u16(-value)
 							builder.u_bit = false
 						} else {
-							builder.address = u16(value)
+							builder.ldr_address = u16(value)
 							builder.u_bit = true
 						}
 						builder.p_bit = false
@@ -327,20 +397,17 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						value := register_from_string(token.lexeme) or {
 							return error('Invalid register')
 						}
-						with_register_offset = true
-						address_builder.rm = value
+						builder.set_rm(value)
 						builder.p_bit = false
 						15
 					}
 					.sign {
 						if token.lexeme == '-' {
 							builder.u_bit = false
-							with_register_offset = true
 							builder.p_bit = false
 							17
 						} else if token.lexeme == '+' {
 							builder.u_bit = true
-							with_register_offset = true
 							builder.p_bit = false
 							17
 						} else {
@@ -355,9 +422,10 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 			15 {
 				state = match token.token_type {
 					.shift_name {
-						address_builder.shift_type = ShiftType.from_string(token.lexeme) or {
+						shift_type := ShiftType.from_string(token.lexeme) or {
 							return error('Invalid shift type ${token.lexeme}')
 						}
+						builder.set_shift_type(shift_type)
 						16
 					}
 					else {
@@ -372,7 +440,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						if value < 0 || value >= 256 {
 							return error('Shift value cannot be longer than 8 bits')
 						}
-						address_builder.shift_value = u8(value)
+						builder.set_shift_value(u8(value))
 						end_state
 					}
 					else {
@@ -386,7 +454,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						value := register_from_string(token.lexeme) or {
 							return error('Invalid register')
 						}
-						address_builder.rm = value
+						builder.set_rm(value)
 						15
 					}
 					else {
@@ -410,22 +478,5 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 		return error('Did not reach a final state')
 	}
 
-	// We may be able to get rid of this boolean flag
-	if with_register_offset {
-		builder.address = RegisterOffset{
-			rm: address_builder.rm
-			shift_type: address_builder.shift_type
-			shift_value: address_builder.shift_value
-		}
-	}
-	return LDROpcode{
-		condition: builder.condition
-		rd: builder.rd
-		rn: builder.rn
-		p_bit: builder.p_bit
-		u_bit: builder.u_bit
-		b_bit: builder.b_bit
-		w_bit: builder.w_bit
-		address: builder.address
-	}
+	return builder.build()
 }

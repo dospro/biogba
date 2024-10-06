@@ -189,7 +189,7 @@ pub fn (opcode LDMOpcode) as_hex() u32 {
 }
 
 pub struct RegisterOffset {
-pub:
+pub mut:
 	rm          u8
 	shift_type  ShiftType
 	shift_value u8
@@ -229,7 +229,7 @@ pub fn (opcode LDROpcode) as_hex() u32 {
 	return opcode_part | condition_part | rn_part | rd_part | p_part | u_part | b_part | w_part | address_part
 }
 
-type LDRSBHOffset = Register | u8
+pub type LDRSBHOffset = Register | u8
 
 pub struct LDRSBHOpcode {
 pub:
