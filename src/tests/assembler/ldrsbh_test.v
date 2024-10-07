@@ -1,8 +1,7 @@
 import biogba {
 	LDRSBHOpcode,
-	RegisterOffset,
 }
-import biogba.arm_assembler { AsmState, Assembler, opcode_from_string }
+import biogba.arm_assembler { Assembler }
 
 /*
 LDRSBH is not an actual opcode, it is a set of opcode, mainly:
@@ -51,19 +50,45 @@ Offset is 0
 fn test_assembler_ldrh_simple() {
 	opcode_string := 'LDRH R0, [R1]'
 
-	opcode := opcode_from_string(opcode_string) or { panic(err) }
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
 	expected_opcode := LDRSBHOpcode{
 		condition: biogba.OpcodeCondition.al
-		rd: 0
-		rn: 1
-		p_bit: true
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
-		address: u8(0)
+		rd:        0
+		rn:        1
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   u8(0)
 	}
 
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDREQH which is the same as LDRH but with the condiciont EQ
+*/
+fn test_assembler_ldrh_with_condition() {
+	opcode_string := 'LDREQH R0, [R1]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.eq
+		rd:        0
+		rn:        1
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   u8(0)
+	}
 	assert opcode is LDRSBHOpcode
 	if opcode is LDRSBHOpcode {
 		assert opcode == expected_opcode

@@ -366,3 +366,21 @@ fn test_negative_sign() {
 	]
 	assert expected == result
 }
+
+/*
+For the LDRH opcode the H is considered a separate token
+The case tests that the H token is parsed correctly
+*/
+fn test_h_token() {
+	opcode_string := 'LDREQH'
+	mut tokenizer := Tokenizer{
+		text: opcode_string
+	}
+	result := tokenizer.parse()
+	expected := [
+		Token{OpcodeTokenType.opcode_name, 'LDR'}
+		Token{OpcodeTokenType.condition, 'EQ'}
+		Token{OpcodeTokenType.halfword, 'H'}
+	]
+	assert expected == result
+}
