@@ -30,7 +30,7 @@ mut:
 }
 
 pub fn (self SingleDataTransferOpcodeBuilder) build() !Opcode {
-	if !self.h_bit {
+	if !self.h_bit && !self.s_bit {
 		return LDROpcode{
 			condition: self.condition
 			rd:        self.rd
@@ -51,7 +51,7 @@ pub fn (self SingleDataTransferOpcodeBuilder) build() !Opcode {
 			w_bit:     self.w_bit
 			s_bit:     self.s_bit
 			h_bit:     self.h_bit
-			address:   u8(0)
+			address:   u8(self.ldr_address as u16)
 		}
 	}
 }
@@ -149,6 +149,10 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						builder.h_bit = true
 						18
 					}
+					.s_bit {
+						builder.s_bit = true
+						19
+					}
 					else {
 						end_state
 					}
@@ -182,6 +186,10 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 					.halfword {
 						builder.h_bit = true
 						18
+					}
+					.s_bit {
+						builder.s_bit = true
+						19
 					}
 					else {
 						end_state
@@ -470,6 +478,25 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						}
 						builder.rd = value
 						5
+					}
+					else {
+						bad_state
+					}
+				}
+			}
+			19 { // We got the S for (SH)
+				state = match token.token_type {
+					.halfword {
+						builder.h_bit = true
+						18
+					}
+					.opcode_name {
+						if token.lexeme == 'B' {
+							builder.b_bit = true
+							3
+						} else {
+							bad_state
+						}
 					}
 					else {
 						bad_state

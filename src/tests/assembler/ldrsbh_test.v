@@ -1,7 +1,7 @@
 import biogba {
 	LDRSBHOpcode,
 }
-import biogba.arm_assembler { Assembler }
+import biogba.arm_assembler { Assembler, AsmState }
 
 /*
 LDRSBH is not an actual opcode, it is a set of opcode, mainly:
@@ -88,6 +88,116 @@ fn test_assembler_ldrh_with_condition() {
 		s_bit:     false
 		h_bit:     true
 		address:   u8(0)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR with signed halfword LDRSH
+*/
+fn test_assembler_ldrsh() {
+	opcode_string := 'LDRSH R0, [R1]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        0
+		rn:        1
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     true
+		h_bit:     true
+		address:   u8(0)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR with signed byte LDRSB
+*/
+fn test_assembler_ldrsb() {
+	opcode_string := 'LDRCCSB R0, [R1]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.cc
+		rd:        0
+		rn:        1
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     true
+		h_bit:     false
+		address:   u8(0)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRH with Rd
+*/
+fn test_assembler_ldrsh_rd() {
+	opcode_string := 'LDRSH R4, [R1]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        4
+		rn:        1
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     true
+		h_bit:     true
+		address:   u8(0)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRH Opcode with immediate address.
+
+The test takes into account the state of PC, in this case 0x20
+then it adds 8 bytes for the fetching pipeline resulting in 0x28
+Finally the distance between offset 0x28 and 0x100 is 0xD8
+*/
+fn test_assembler_absolute_address() {
+	opcode_string := 'LDRH R5, #100'
+
+	assembler := Assembler{
+		state: AsmState{
+			r15: 0x20
+		}
+	}
+
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        5
+		rn:        15
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   u8(0xD8)
 	}
 	assert opcode is LDRSBHOpcode
 	if opcode is LDRSBHOpcode {
