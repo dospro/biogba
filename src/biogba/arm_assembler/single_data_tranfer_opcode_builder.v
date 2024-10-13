@@ -7,6 +7,7 @@ import biogba {
 	Offset,
 	Opcode,
 	OpcodeCondition,
+	Register,
 	RegisterOffset,
 	ShiftType,
 	opcode_condition_from_string,
@@ -30,7 +31,7 @@ mut:
 }
 
 pub fn (self SingleDataTransferOpcodeBuilder) build() !Opcode {
-	if !self.h_bit && !self.s_bit {
+	if self.is_ldr() {
 		return LDROpcode{
 			condition: self.condition
 			rd:        self.rd
@@ -51,13 +52,17 @@ pub fn (self SingleDataTransferOpcodeBuilder) build() !Opcode {
 			w_bit:     self.w_bit
 			s_bit:     self.s_bit
 			h_bit:     self.h_bit
-			address:   u8(self.ldr_address as u16)
+			address:   self.ldrsbh_address
 		}
 	}
 }
 
+pub fn (self SingleDataTransferOpcodeBuilder) is_ldr() bool {
+	return !self.h_bit && !self.s_bit
+}
+
 pub fn (mut self SingleDataTransferOpcodeBuilder) set_rm(value u16) SingleDataTransferOpcodeBuilder {
-	if self.opcode_name == 'LDR' {
+	if self.is_ldr() {
 		if mut self.ldr_address is u16 {
 			self.ldr_address = RegisterOffset{
 				rm: u8(value)
@@ -65,12 +70,14 @@ pub fn (mut self SingleDataTransferOpcodeBuilder) set_rm(value u16) SingleDataTr
 		} else if mut self.ldr_address is RegisterOffset {
 			self.ldr_address.rm = u8(value)
 		}
+	} else {
+		self.ldrsbh_address = Register.from_int(value) or { panic('Bad register') }
 	}
 	return self
 }
 
 pub fn (mut self SingleDataTransferOpcodeBuilder) set_shift_type(value ShiftType) SingleDataTransferOpcodeBuilder {
-	if self.opcode_name == 'LDR' {
+	if self.is_ldr() {
 		if mut self.ldr_address is u16 {
 			self.ldr_address = RegisterOffset{
 				shift_type: value
@@ -83,7 +90,7 @@ pub fn (mut self SingleDataTransferOpcodeBuilder) set_shift_type(value ShiftType
 }
 
 pub fn (mut self SingleDataTransferOpcodeBuilder) set_shift_value(value u8) SingleDataTransferOpcodeBuilder {
-	if self.opcode_name == 'LDR' {
+	if self.is_ldr() {
 		if mut self.ldr_address is u16 {
 			self.ldr_address = RegisterOffset{
 				shift_value: value
@@ -244,10 +251,18 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						} else {
 							real_address = asm_state.get_real_address(u16(value))
 						}
-						if real_address >= 0x1000 {
-							return error('Absolute address cannot be bigger than 11 bits. Value: ${value}')
+						// For LDR the offset is 11 bits, for LDRSBH it is 8 bytes
+						if builder.is_ldr() {
+							if real_address >= 0x1000 {
+								return error('Absolute address cannot be bigger than 11 bits. Value: ${value}')
+							}
+							builder.ldr_address = real_address
+						} else {
+							if real_address >= 0x100 {
+								return error('Absolute address cannot be bigger than 11 bits. Value: ${value}')
+							}
+							builder.ldrsbh_address = u8(real_address)
 						}
-						builder.ldr_address = real_address
 						state // Final state
 					}
 					.open_bracket {
@@ -272,7 +287,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 					}
 				}
 			}
-			7 {
+			7 { // Preindex after first register
 				state = match token.token_type {
 					.close_bracket {
 						14 // End state or possible post index expression
@@ -282,13 +297,22 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						if value >= 0x1000 || value <= -0x1000 {
 							return error('Absolute address cannot be bigger than 12 bits. Value: ${value}')
 						}
-
-						if value < 0 {
-							builder.ldr_address = u16(-value)
-							builder.u_bit = false
+						if builder.is_ldr() {
+							if value < 0 {
+								builder.ldr_address = u16(-value)
+								builder.u_bit = false
+							} else {
+								builder.ldr_address = u16(value)
+								builder.u_bit = true
+							}
 						} else {
-							builder.ldr_address = u16(value)
-							builder.u_bit = true
+							if value < 0 {
+								builder.ldrsbh_address = u8(-value)
+								builder.u_bit = false
+							} else {
+								builder.ldrsbh_address = u8(value)
+								builder.u_bit = true
+							}
 						}
 						8
 					}

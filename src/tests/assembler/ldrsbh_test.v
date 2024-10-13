@@ -1,7 +1,8 @@
 import biogba {
 	LDRSBHOpcode,
+	Register
 }
-import biogba.arm_assembler { Assembler, AsmState }
+import biogba.arm_assembler { AsmState, Assembler }
 
 /*
 LDRSBH is not an actual opcode, it is a set of opcode, mainly:
@@ -198,6 +199,160 @@ fn test_assembler_absolute_address() {
 		s_bit:     false
 		h_bit:     true
 		address:   u8(0xD8)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDR Opcode with immediate address outside limit.
+
+LDR Opcode only has 8 bits for absolute address (256)
+The test will try an offset larger than 255. It also considers the
+fetch pipeline. So the address can go up to 255+8 = 0x107
+
+To test the whole calculation, the test takes 0x20 as the base.
+In this case, having a value greater than 0x107+0x20 should fail the assembly
+*/
+fn test_assembler_absolute_address_limit() {
+	opcode_string := 'LDRSH R5, #128'
+
+	assembler := Assembler{
+		state: AsmState{
+			r15: 0x20
+		}
+	}
+
+	opcode := assembler.parse_opcode(opcode_string) or { return }
+	assert false
+}
+
+/*
+Test LDRH Opcode with Rn as base and offset 0.
+*/
+fn test_assembler_ldrsbh_preindex() {
+	opcode_string := 'LDRSB R5, [R14]'
+
+	assembler := Assembler{}
+
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        5
+		rn:        14
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     true
+		h_bit:     false
+		address:   u8(0)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH Opcode that uses Rn as the base address with a positive offset
+*/
+fn test_assembler_ldrh_preindex_with_offset() {
+	opcode_string := 'LDRH R6, [R7, #0F]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        6
+		rn:        7
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   u8(0xF)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH Opcode that uses Rn as the base address with a negative sign
+*/
+fn test_assembler_ldrh_preindex_with_negative_offset() {
+	opcode_string := 'LDREQSH R11, [R10, #-30]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.eq
+		rd:        11
+		rn:        10
+		p_bit:     true
+		u_bit:     false
+		w_bit:     false
+		s_bit:     true
+		h_bit:     true
+		address:   u8(0x30)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH Opcode with preindex and writeback
+*/
+fn test_assembler_ldrh_preindex_with_writeback() {
+	opcode_string := 'LDRSH R11, [R10, #FF]!'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        11
+		rn:        10
+		p_bit:     true
+		u_bit:     true
+		w_bit:     true
+		s_bit:     true
+		h_bit:     true
+		address:   u8(0xFF)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH Opcode with register offset Rm
+*/
+fn test_assembler_ldrh_preindex_with_rm() {
+	opcode_string := 'LDRSB R1, [R3, R5]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        1
+		rn:        3
+		p_bit:     true
+		u_bit:     true
+		w_bit:     false
+		s_bit:     true
+		h_bit:     false
+		address:   biogba.Register.r5
 	}
 	assert opcode is LDRSBHOpcode
 	if opcode is LDRSBHOpcode {
