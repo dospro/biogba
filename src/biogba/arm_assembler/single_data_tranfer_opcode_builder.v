@@ -102,6 +102,27 @@ pub fn (mut self SingleDataTransferOpcodeBuilder) set_shift_value(value u8) Sing
 	return self
 }
 
+pub fn (mut self SingleDataTransferOpcodeBuilder) set_address(value i64) SingleDataTransferOpcodeBuilder {
+	if self.is_ldr() {
+		if value < 0 {
+			self.ldr_address = u16(-value)
+			self.u_bit = false
+		} else {
+			self.ldr_address = u16(value)
+			self.u_bit = true
+		}
+	} else {
+		if value < 0 {
+			self.ldrsbh_address = u8(-value)
+			self.u_bit = false
+		} else {
+			self.ldrsbh_address = u8(value)
+			self.u_bit = true
+		}
+	}
+	return self
+}
+
 pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer Tokenizer, asm_state AsmState) !Opcode {
 	mut builder := SingleDataTransferOpcodeBuilder{
 		opcode_name:    opcode_name
@@ -297,23 +318,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						if value >= 0x1000 || value <= -0x1000 {
 							return error('Absolute address cannot be bigger than 12 bits. Value: ${value}')
 						}
-						if builder.is_ldr() {
-							if value < 0 {
-								builder.ldr_address = u16(-value)
-								builder.u_bit = false
-							} else {
-								builder.ldr_address = u16(value)
-								builder.u_bit = true
-							}
-						} else {
-							if value < 0 {
-								builder.ldrsbh_address = u8(-value)
-								builder.u_bit = false
-							} else {
-								builder.ldrsbh_address = u8(value)
-								builder.u_bit = true
-							}
-						}
+						builder.set_address(value)
 						8
 					}
 					.sign {
@@ -346,6 +351,9 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						11
 					}
 					.shift_name {
+						if !builder.is_ldr() {
+							return error('${builder.opcode_name} doesnt support shift operands')
+						}
 						shift_type := ShiftType.from_string(token.lexeme) or {
 							return error('Invalid shift type ${token.lexeme}')
 						}
@@ -414,14 +422,7 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 						if value >= 0x1000 || value <= -0x1000 {
 							return error('Absolute address cannot be bigger than 12 bits. Value: ${value}')
 						}
-
-						if value < 0 {
-							builder.ldr_address = u16(-value)
-							builder.u_bit = false
-						} else {
-							builder.ldr_address = u16(value)
-							builder.u_bit = true
-						}
+						builder.set_address(value)
 						builder.p_bit = false
 						end_state
 					}
@@ -454,6 +455,9 @@ pub fn SingleDataTransferOpcodeBuilder.parse(opcode_name string, mut tokenizer T
 			15 {
 				state = match token.token_type {
 					.shift_name {
+						if !builder.is_ldr() {
+							return error('The opcode doesnt support shift operands')
+						}
 						shift_type := ShiftType.from_string(token.lexeme) or {
 							return error('Invalid shift type ${token.lexeme}')
 						}

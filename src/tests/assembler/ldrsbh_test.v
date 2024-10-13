@@ -1,6 +1,6 @@
 import biogba {
 	LDRSBHOpcode,
-	Register
+	Register,
 }
 import biogba.arm_assembler { AsmState, Assembler }
 
@@ -16,7 +16,7 @@ LDR opcode handles unsigned words and bytes loads
 while LDRSBH opcodes handle signed bytes and signed/unsigned half words
 
 Some differences:
-- The address portion is almost the same, except that these opcode don't
+- The address portion is almost the same, except that these opcodes don't
   support shift operands.
 - There is no T in these opcodes
 - The absolute offset is 8 bytes wide instead of 12
@@ -352,10 +352,162 @@ fn test_assembler_ldrh_preindex_with_rm() {
 		w_bit:     false
 		s_bit:     true
 		h_bit:     false
-		address:   biogba.Register.r5
+		address:   Register.r5
 	}
 	assert opcode is LDRSBHOpcode
 	if opcode is LDRSBHOpcode {
 		assert opcode == expected_opcode
 	}
+}
+
+/*
+Test LDRSBH Opcode with register negative offset Rm
+*/
+fn test_assembler_ldrh_preindex_with_negative_rm() {
+	opcode_string := 'LDRH R1, [R3, -R12]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        1
+		rn:        3
+		p_bit:     true
+		u_bit:     false
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   Register.r12
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH fails when used with shift operands
+*/
+fn test_assembler_ldrh_no_shifts() {
+	opcode_string := 'LDRH R1, [R2, R3, LSL#1]'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { return }
+	assert false
+}
+
+/*
+Test LDRSBH Opcode post-index with expression
+*/
+fn test_assembler_ldrh_postindex_with_expression() {
+	opcode_string := 'LDRH R1, [R4], #10'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        1
+		rn:        4
+		p_bit:     false
+		u_bit:     true
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   u8(0x10)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH Opcode post-index with negative expression
+*/
+fn test_assembler_ldrh_postindex_with_negative_expression() {
+	opcode_string := 'LDRH R1, [R4], #-20'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        1
+		rn:        4
+		p_bit:     false
+		u_bit:     false
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   u8(0x20)
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH Opcode post-index with register offset Rm
+*/
+fn test_assembler_ldrh_postindex_with_register_offset() {
+	opcode_string := 'LDRH R1, [R2], R3'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        1
+		rn:        2
+		p_bit:     false
+		u_bit:     true
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   Register.r3
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH Opcode post-index with negative register offset Rm
+*/
+fn test_assembler_ldrh_postindex_with_negative_register_offset() {
+	opcode_string := 'LDRH R1, [R2], -R3'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { panic(err) }
+
+	expected_opcode := LDRSBHOpcode{
+		condition: biogba.OpcodeCondition.al
+		rd:        1
+		rn:        2
+		p_bit:     false
+		u_bit:     false
+		w_bit:     false
+		s_bit:     false
+		h_bit:     true
+		address:   Register.r3
+	}
+	assert opcode is LDRSBHOpcode
+	if opcode is LDRSBHOpcode {
+		assert opcode == expected_opcode
+	}
+}
+
+/*
+Test LDRSBH fails when used with shift operands in postindex
+*/
+fn test_assembler_ldrh_postindex_no_shifts() {
+	opcode_string := 'LDRH R1, [R2], R3, ROR#2'
+
+	assembler := Assembler{}
+	opcode := assembler.parse_opcode(opcode_string) or { return }
+	assert false
 }
