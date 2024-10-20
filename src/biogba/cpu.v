@@ -1,6 +1,6 @@
 module biogba
 
-import math.bits {rotate_left_32}
+import math.bits { rotate_left_32 }
 
 pub struct CPSR {
 pub mut:
@@ -60,6 +60,12 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					self.cpsr.t = true
 				}
 				self.r[15] = self.r[rm] & 0xFFFF_FFFE
+			} else if (opcode & 0xE00_0090) == 0x90 { // LDRSBH
+				rd := (opcode >> 12) & 0xF
+				rn := (opcode >> 16) & 0xF
+				address := self.r[rn]
+				value := self.memory.read16(address)
+				self.r[rd] = u32(value)
 			} else {
 				data_processing_opcode := (opcode >> 21) & 0xF
 				rn := (opcode >> 16) & 0xF
@@ -333,7 +339,7 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 	if b_bit {
 		self.r[rd] = self.memory.read8(address)
 	} else {
-		unalignment_shift := (address & 3) << 3 
+		unalignment_shift := (address & 3) << 3
 		mut value := self.memory.read32(address & 0xFFFF_FFFC) // truncate to word aligned
 		value = rotate_left_32(value, -int(unalignment_shift))
 		self.r[rd] = value
