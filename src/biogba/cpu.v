@@ -63,9 +63,25 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 			} else if (opcode & 0xE00_0090) == 0x90 { // LDRSBH
 				rd := (opcode >> 12) & 0xF
 				rn := (opcode >> 16) & 0xF
-				address := self.r[rn]
-				value := self.memory.read16(address)
+				u_bit := (opcode >> 23) & 1
+				is_immediate := ((opcode >> 22) & 1) == 1
+				is_preindex := ((opcode >> 24) & 1) == 1
+				offset := match is_immediate {
+					true { u32(((opcode >> 4) & 0xF0) | (opcode & 0xF)) }
+					false { self.r[opcode & 0xF] }
+				}
+				address := match u_bit {
+					0 { self.r[rn] - offset }
+					1 { self.r[rn] + offset }
+					else { panic('u_bit is not binary!') }
+				}
+				println('R${rn}: ${self.r[rn].hex()}, Offset: ${offset.hex()}')
+				value := match is_preindex {
+					true { self.memory.read16(address) } // First add base + offset and then read
+					false { self.memory.read16(self.r[rn]) } // First read from base and then add offset
+				}
 				self.r[rd] = u32(value)
+				self.r[rn] = address
 			} else {
 				data_processing_opcode := (opcode >> 21) & 0xF
 				rn := (opcode >> 16) & 0xF

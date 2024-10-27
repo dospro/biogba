@@ -1,0 +1,32 @@
+digraph g {
+    rankdir=LR;
+    node [shape = doublecircle]; 1 4 6 7 9 13 14
+	node [shape = circle];
+
+  0 -> 1 [label="expression"]
+
+  0 -> 2 [label="["]
+  2 -> 3 [label="reg"]
+  3 -> 4 [label="]"]
+  4 -> 5 [label="sign"]
+  4 -> 6 [label="expression"]
+
+  4 -> 7 [label="reg"]
+  5 -> 7 [label="reg"]
+
+  7 -> 8 [label="shift"]
+  8 -> 9 [label="expression"]
+
+  3 -> 10 [label="sign"]
+  3 -> 11 [label="expression"]
+  3 -> 12 [label="register"]
+  10 -> 12 [label="reg"]
+  12 -> 13 [label="]"]
+  13 -> 14 [label="!"]
+  11 -> 13 [label="]"]
+
+  12 -> 15 [label="shift"]
+  15 -> 16 [label="expression"]
+  16 -> 13 [label="]"]
+
+}

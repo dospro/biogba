@@ -67,6 +67,10 @@ digraph g {
   27 -> 31 [label="register"]
   27 -> 29 [label="B"]
 
+  27 -> 33 [label="H"]
+  33 -> 31 [label="register"]
+  28 -> 33 [label="H"]
+
 
 
 }
