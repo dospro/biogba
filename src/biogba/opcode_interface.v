@@ -269,3 +269,26 @@ pub fn (opcode LDRSBHOpcode) as_hex() u32 {
 	}
 	return condition_part | rn_part | rd_part | p_part | u_part | w_part | s_part | h_part | address_part | opcode_part
 }
+
+pub struct MULOpcode {
+pub:
+	condition OpcodeCondition = OpcodeCondition.al
+	rd u8
+	rn u8
+	rs u8
+	rm u8
+	s_bit bool
+	a_bit bool
+}
+
+pub fn (opcode MULOpcode) as_hex() u32 {
+	opcode_part := u32(0x0000_0090)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	rm_part := u32(opcode.rm)
+	rs_part := u32(opcode.rs) << 8
+	rn_part := u32(opcode.rn) << 12
+	rd_part := u32(opcode.rd) << 16
+	s_part := if opcode.s_bit { u32(0x10_0000) } else { u32(0) }
+	a_part := if opcode.a_bit { u32(0x20_0000) } else { u32(0) }
+	return condition_part | rd_part | rn_part | rs_part | rm_part | s_part | a_part | opcode_part
+}
