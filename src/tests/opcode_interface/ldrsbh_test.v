@@ -5,6 +5,40 @@ import biogba {
 }
 
 /*
+Bits:    31   28 27   25 24 23 22 21 20 19   16 15   12 11    8 7 6 5 4 3    0
+Format: [Cond][0 0 0][P U O W L][  Rn  ][  Rd  ][0 0 0 0][T S H I][  Rm  ]
+
+Campos y significados:
+
+- Rm (bits 0-3): Registro de offset
+- S H (bits 4-5): 
+    00 = SWP instruction
+    01 = Unsigned halfwords
+    10 = Signed byte
+    11 = Signed halfwords
+
+- T (bit 6): Source/Destination register
+- Base register (bits 16-19): Rn
+- Load/Store (bit 20):
+    0 = store to memory
+    1 = load from memory
+
+- Write-back (bit 21):
+    0 = no write-back
+    1 = write address into base
+
+- Up/Down (bit 23):
+    0 = down: subtract offset from base
+    1 = up: add offset to base
+
+- Pre/Post indexing (bit 24):
+    0 = post: add/subtract offset after transfer
+    1 = pre: add/subtract offset before transfer
+
+- Condition field (bits 28-31): Cond
+*/
+
+/*
 LDRSBH is not an actual opcode. I used this name to represent the following opcodes:
 * LDRH - Load Unsigned Haldfword
 * LDRSH - Load Signed Halfword

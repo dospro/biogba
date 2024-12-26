@@ -34,13 +34,13 @@ fn test_ldrh_simple_case() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rn: 1
-		rd: 0
-		p_bit: false
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rn:      1
+		rd:      0
+		p_bit:   false
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: u8(0)
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -67,13 +67,13 @@ fn test_ldrh_rd() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rd: 10
-		rn: 1
-		p_bit: false
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rd:      10
+		rn:      1
+		p_bit:   false
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: u8(0)
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -98,13 +98,13 @@ fn test_ldrh_rn() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rd: 5
-		rn: 2
-		p_bit: false
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rd:      5
+		rn:      2
+		p_bit:   false
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: u8(0)
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -132,13 +132,13 @@ fn test_ldrh_immediate() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rd: 4
-		rn: 3
-		p_bit: true
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rd:      4
+		rn:      3
+		p_bit:   true
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: u8(0x50)
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -155,17 +155,17 @@ We have the following words in memory:
 
 0x1122_3344 and 0x5566_7788
 These are saved in the form
-A+0: 0x44 
-A+1: 0x33 
-A+2: 0x22 
-A+3: 0x11 
-A+4: 0x88 
-A+5: 0x77 
-A+6: 0x66 
+A+0: 0x44
+A+1: 0x33
+A+2: 0x22
+A+3: 0x11
+A+4: 0x88
+A+5: 0x77
+A+6: 0x66
 A+7: 0x55
 Using LDRH from a half-word aligned address will fill
-the data bus with the value 0x1122_0000 and because of 
-the algnment, bits 16-31 are considered valid so the 
+the data bus with the value 0x1122_0000 and because of
+the algnment, bits 16-31 are considered valid so the
 result is 0x1122
 */
 fn test_ldrh_half_aligned_address() {
@@ -181,13 +181,13 @@ fn test_ldrh_half_aligned_address() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rd: 6
-		rn: 5
-		p_bit: true
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rd:      6
+		rn:      5
+		p_bit:   true
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: u8(0x32)
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -215,13 +215,13 @@ fn test_ldrh_rm() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rd: 1
-		rn: 2
-		p_bit: true
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rd:      1
+		rn:      2
+		p_bit:   true
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: biogba.Register.r3
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -248,13 +248,13 @@ fn test_ldrh_immediate_negative() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rd: 7
-		rn: 8
-		p_bit: true
-		u_bit: false
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rd:      7
+		rn:      8
+		p_bit:   true
+		u_bit:   false
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: u8(0x40)
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -267,7 +267,7 @@ fn test_ldrh_immediate_negative() {
 Test LDRH Opcode preindex updates Rn
 
 When in preindex mode, Rn is updated before reading
-with the content of the base plus the offset. 
+with the content of the base plus the offset.
 An autoincrement
 */
 fn test_ldrh_preindex() {
@@ -283,20 +283,20 @@ fn test_ldrh_preindex() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rd: 1
-		rn: 2
-		p_bit: true
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rd:      1
+		rn:      2
+		p_bit:   true
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: u8(0x5)
 	}
 	cpu.execute_opcode(opcode.as_hex())
 	result := cpu.get_state()
 
 	assert result.r[1] == 0xDDCC
-	assert result.r[2] == 0x10
+	// assert result.r[2] == 0x10
 }
 
 /*
@@ -304,6 +304,10 @@ Test LDRH Opcode with preindex bit unset (post-index)
 
 In this test the addition is done after loading the value
 so the real address is what we have in rn only.
+
+Also, when using post-index writeback is always on regardless
+of the value of w-flag.
+So the test also asserts that Rn get updated
 */
 fn test_ldrh_postindex() {
 	mut memory := mocks.MemoryFake{}
@@ -318,13 +322,13 @@ fn test_ldrh_postindex() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDRSBHOpcode{
-		rd: 1
-		rn: 2
-		p_bit: false
-		u_bit: true
-		w_bit: false
-		s_bit: false
-		h_bit: true
+		rd:      1
+		rn:      2
+		p_bit:   false
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
 		address: u8(0x40)
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -336,15 +340,158 @@ fn test_ldrh_postindex() {
 
 /*
 Test LDRH Opcode with preindex and no writeback
+
+The test first sets the value 0xFFEE_DDCC at address 0x50
+Then using a base (Rn) of 0x40 and an offset of 0x10
+the instrucción should read from offset 0x50 because it makes
+the addition before the read.
+
+Also, we must verify that the base is not updated because writeback
+is not set.
 */
+fn test_ldrh_preindex_no_writeback() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x50, [u32(0xFFEE_DDCC)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[1] = 0 // Dest register
+	cpu_state.r[2] = 0x40 // Offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDRSBHOpcode{
+		rd:      1
+		rn:      2
+		p_bit:   true
+		u_bit:   true
+		w_bit:   false
+		s_bit:   false
+		h_bit:   true
+		address: u8(0x10)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[1] == 0xDDCC
+	assert result.r[2] == 0x40
+}
 
 /*
 Test LDRH Opcode with preindex and writeback
+
+After the opcode executes, the test verifies that
+the base register Rn is updated with Rn + offset
 */
+fn test_ldrh_preindex_writeback() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x50, [u32(0xFFEE_DDCC)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[1] = 0 // Dest register
+	cpu_state.r[2] = 0x40 // Offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDRSBHOpcode{
+		rd:      1
+		rn:      2
+		p_bit:   true
+		u_bit:   true
+		w_bit:   true
+		s_bit:   false
+		h_bit:   true
+		address: u8(0x10)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[1] == 0xDDCC
+	assert result.r[2] == 0x50
+}
 
 /*
-Test LDRH Opcode with postindex and no writeback
+Test LDRSH Opcode
 
-When using postindex, writeback is always executed
-and w should be unset. Setting w will produce other behaviors
+In this test we set s-flag which means that the value
+loaded is a signed half-word.
+
+The test verifies that if we load a 16 bit value where
+the msb is 1, then we fill the sign bit to 32 bits of
+the register.
+
+Example:
+Reading a value of 0xF000 will produce a value of 0xFFFF_F000
+in the register
+0xF000 -> 0xFFFF_F000
 */
+fn test_ldrsh() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x20, [u32(0x1000_F000)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[1] = 0 // Dest register
+	cpu_state.r[2] = 0x10 // Offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDRSBHOpcode{
+		rd:      1
+		rn:      2
+		p_bit:   true
+		u_bit:   true
+		w_bit:   false
+		s_bit:   true
+		h_bit:   true
+		address: u8(0x10)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[1] == 0xFFFF_F000
+}
+
+/*
+Test LDRSB Opcode
+
+The test verifies that when s-flag is set and h-flag is not
+then we load a byte like the LDRB opcode, but the sign bit (bit7)
+is extended to fill the destination register
+
+Example:
+Reading a value of 0x80 will produce a value of 0xFFFF_FF80
+in the register
+0xF000 -> 0xFFFF_F000
+*/
+fn test_ldrsb() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0x20, [u32(0x1000_F080)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[1] = 0 // Dest register
+	cpu_state.r[2] = 0x10 // Offset
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDRSBHOpcode{
+		rd:      1
+		rn:      2
+		p_bit:   true
+		u_bit:   true
+		w_bit:   false
+		s_bit:   true
+		h_bit:   false
+		address: u8(0x10)
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert result.r[1] == 0xFFFF_FF80
+}

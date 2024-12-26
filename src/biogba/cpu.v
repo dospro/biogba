@@ -66,6 +66,9 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				u_bit := (opcode >> 23) & 1
 				is_immediate := ((opcode >> 22) & 1) == 1
 				is_preindex := ((opcode >> 24) & 1) == 1
+				writeback := ((opcode >> 21) & 1) == 1
+				is_signed := ((opcode >> 6) & 1) == 1
+				is_halfword := ((opcode >> 5) & 1) == 1
 				offset := match is_immediate {
 					true { u32(((opcode >> 4) & 0xF0) | (opcode & 0xF)) }
 					false { self.r[opcode & 0xF] }
@@ -77,11 +80,25 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				}
 				println('R${rn}: ${self.r[rn].hex()}, Offset: ${offset.hex()}')
 				value := match is_preindex {
-					true { self.memory.read16(address) } // First add base + offset and then read
-					false { self.memory.read16(self.r[rn]) } // First read from base and then add offset
+					true {
+						if writeback {
+							self.r[rn] = address
+						}
+						self.memory.read16(address) // First add base + offset and then read
+					}
+					false {
+						result := self.memory.read16(self.r[rn]) // First read from base and then add offset
+						self.r[rn] = address
+						result
+					}
 				}
-				self.r[rd] = u32(value)
-				self.r[rn] = address
+				mask := if is_halfword { u32(0xFFFF_0000) } else { u32(0xFFFF_FF00) }
+				check_bit := if is_halfword { u32(0x8000) } else { u32(0x80) }
+				self.r[rd] = if is_signed && (value & check_bit) != 0 {
+					mask | u32(value)
+				} else {
+					u32(value)
+				}
 			} else {
 				data_processing_opcode := (opcode >> 21) & 0xF
 				rn := (opcode >> 16) & 0xF
