@@ -54,6 +54,9 @@ pub fn (self Assembler) parse_opcode(opcode_text string) !biogba.Opcode {
 		'LDR' {
 			SingleDataTransferOpcodeBuilder.parse(opcode_name.lexeme, mut tokenizer, self.state)!
 		}
+		'MLA', 'MUL' {
+			MultiplyOpcodeBuilder.parse(opcode_name.lexeme, mut tokenizer)!
+		}
 		else {
 			return error('Opcode not implemented')
 		}

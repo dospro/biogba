@@ -10,7 +10,8 @@ pub fn (mut self datatypes.Stack[int]) clear() {
 
 pub const (
 	final_states     = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17]
-	opcode_names     = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B', 'CMN', 'CMP', 'EOR', 'LDM', 'LDR']
+	opcode_names     = ['ADC', 'ADD', 'AND', 'BIC', 'BL', 'BX', 'B', 'CMN', 'CMP', 'EOR', 'LDM', 
+	'LDR', 'MLA', 'MUL']
 	conditions       = ['EQ', 'NE', 'CS', 'CC', 'MI', 'PL', 'VS', 'VC', 'HI', 'LS', 'GE', 'LT',
 		'GT', 'LE', 'AL']
 	addressing_modes = ['IB', 'IA', 'DB', 'DA', 'ED', 'FD', 'EA', 'FA']

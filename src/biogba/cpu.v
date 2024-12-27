@@ -60,6 +60,28 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					self.cpsr.t = true
 				}
 				self.r[15] = self.r[rm] & 0xFFFF_FFFE
+			} else if (opcode & 0x0FC0_0090) == 0x90 { // MUL
+				rd := (opcode >> 16) & 0xF
+				rn := (opcode >> 12) & 0xF
+				rs := (opcode >> 8) & 0xF
+				rm := opcode & 0xF
+				is_mla := ((opcode >> 21) & 1) == 1
+				s_bit := ((opcode >> 20) & 1) == 1
+				self.r[rd] = if is_mla {
+					self.r[rn] + self.r[rs] * self.r[rm]
+				} else {
+					self.r[rs] * self.r[rm]
+				}
+				if s_bit {
+					self.cpsr.n = false
+					self.cpsr.z = false
+					if (self.r[rd] & 0x8000_0000) != 0 {
+						self.cpsr.n = true
+					}
+					if self.r[rd] == 0 {
+						self.cpsr.z = true
+					}
+				}
 			} else if (opcode & 0xE00_0090) == 0x90 { // LDRSBH
 				rd := (opcode >> 12) & 0xF
 				rn := (opcode >> 16) & 0xF
