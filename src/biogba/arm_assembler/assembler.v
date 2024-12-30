@@ -36,7 +36,7 @@ pub fn (self Assembler) parse_opcode(opcode_text string) !biogba.Opcode {
 	opcode_name := tokenizer.next() or { return error('Error parsing line of code') }
 
 	value := match opcode_name.lexeme {
-		'ADC', 'ADD', 'AND', 'BIC', 'EOR' {
+		'ADC', 'ADD', 'AND', 'BIC', 'EOR', 'MOV' {
 			DataProcessingOpcodeBuilder.parse(opcode_name.lexeme, mut tokenizer)!
 		}
 		'B', 'BL' {

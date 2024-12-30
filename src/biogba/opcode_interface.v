@@ -292,3 +292,12 @@ pub fn (opcode MULOpcode) as_hex() u32 {
 	a_part := if opcode.a_bit { u32(0x20_0000) } else { u32(0) }
 	return condition_part | rd_part | rn_part | rs_part | rm_part | s_part | a_part | opcode_part
 }
+
+pub struct MOVOpcode {
+	DataProcessingOpcode
+}
+
+pub fn (opcode MOVOpcode) as_hex() u32 {
+	opcode_part := u32(0x01A0_0000)
+	return opcode_part | opcode.DataProcessingOpcode.as_hex()
+}

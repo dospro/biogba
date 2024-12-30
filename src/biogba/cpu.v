@@ -150,6 +150,10 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					0xB { // CMN
 						self.r[rn] + operand_value
 					}
+					0xD { // MOV
+						self.r[rd] = operand_value
+						operand_value
+					}
 					0xE { // BIC
 						self.r[rd] = self.r[rn] & ~operand_value
 						self.r[rd]

@@ -8,6 +8,7 @@ import biogba {
 	CMNOpcode,
 	CMPOpcode,
 	EOROpcode,
+	MOVOpcode,
 	Opcode,
 	OpcodeCondition,
 	ShiftOperand,
@@ -130,7 +131,11 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 							return error('Invalid register')
 						}
 						builder.set_rd(value)
-						4
+						if opcode_name == 'MOV' {
+							5
+						} else {
+							4
+						}
 					}
 					else {
 						-1
@@ -148,7 +153,11 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 							return error('Invalid register')
 						}
 						builder.set_rd(value)
-						4
+						if opcode_name == 'MOV' {
+							5
+						} else {
+							4
+						}
 					}
 					else {
 						-1
@@ -162,7 +171,11 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 							return error('Invalid register')
 						}
 						builder.set_rd(value)
-						4
+						if opcode_name == 'MOV' {
+							5
+						} else {
+							4
+						}
 					}
 					else {
 						-1
@@ -182,6 +195,7 @@ pub fn DataProcessingOpcodeBuilder.parse(opcode_name string, mut tokenizer Token
 						-1
 					}
 				}
+				
 			}
 			5 {
 				state = match token.token_type {
@@ -483,6 +497,14 @@ pub fn (self DataProcessingOpcodeBuilder) build() !Opcode {
 				shift_operand: self.shift_operand
 				rn: self.rn
 				rd: self.rd
+				s_bit: self.s_bit
+			}
+		}
+		'MOV' {
+			return MOVOpcode{
+				condition: self.condition
+				shift_operand: self.shift_operand
+				rd : self.rd
 				s_bit: self.s_bit
 			}
 		}
