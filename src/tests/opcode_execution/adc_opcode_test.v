@@ -81,10 +81,10 @@ fn test_adc_immediate_simple() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0xD
-		rn: 0x1
+		rd:            0xD
+		rn:            0x1
 		shift_operand: biogba.ShiftOperandImmediate{
-			value: 0x1
+			value:  0x1
 			rotate: 0x1
 		}
 	}
@@ -103,10 +103,10 @@ fn test_adc_immediate() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0xD
-		rn: 0x7
+		rd:            0xD
+		rn:            0x7
 		shift_operand: biogba.ShiftOperandImmediate{
-			value: 0xF8
+			value:  0xF8
 			rotate: 0xF
 		}
 	}
@@ -126,11 +126,11 @@ fn test_adc_register_lsl_immediate() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0x2
-		rn: 0xE
+		rd:            0x2
+		rn:            0xE
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x3
-			shift_type: biogba.ShiftType.lsl
+			rm:          0x3
+			shift_type:  biogba.ShiftType.lsl
 			shift_value: 0x1F
 		}
 	}
@@ -152,13 +152,13 @@ fn test_adc_register_lsl_register() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0x2
-		rn: 0xE
+		rd:            0x2
+		rn:            0xE
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x3
+			rm:             0x3
 			register_shift: true
-			shift_type: biogba.ShiftType.lsl
-			shift_value: 0x4
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    0x4
 		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -178,13 +178,13 @@ fn test_adc_register_lsr_immediate() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0x2
-		rn: 0xE
+		rd:            0x2
+		rn:            0xE
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x3
+			rm:             0x3
 			register_shift: false
-			shift_type: biogba.ShiftType.lsr
-			shift_value: 0x2
+			shift_type:     biogba.ShiftType.lsr
+			shift_value:    0x2
 		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -205,13 +205,13 @@ fn test_adc_register_lsr_register() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0x2
-		rn: 0xE
+		rd:            0x2
+		rn:            0xE
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x3
+			rm:             0x3
 			register_shift: true
-			shift_type: biogba.ShiftType.lsr
-			shift_value: 0x4
+			shift_type:     biogba.ShiftType.lsr
+			shift_value:    0x4
 		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -231,13 +231,13 @@ fn test_adc_register_asr_immediate() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0x2
-		rn: 0xE
+		rd:            0x2
+		rn:            0xE
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x3
+			rm:             0x3
 			register_shift: false
-			shift_type: biogba.ShiftType.asr
-			shift_value: 0x4
+			shift_type:     biogba.ShiftType.asr
+			shift_value:    0x4
 		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -258,13 +258,13 @@ fn test_adc_register_asr_register() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0x2
-		rn: 0xE
+		rd:            0x2
+		rn:            0xE
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x3
+			rm:             0x3
 			register_shift: true
-			shift_type: biogba.ShiftType.asr
-			shift_value: 0x4
+			shift_type:     biogba.ShiftType.asr
+			shift_value:    0x4
 		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -284,13 +284,13 @@ fn test_adc_register_ror_immediate() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0x2
-		rn: 0xE
+		rd:            0x2
+		rn:            0xE
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x3
+			rm:             0x3
 			register_shift: false
-			shift_type: biogba.ShiftType.ror
-			shift_value: 0x8
+			shift_type:     biogba.ShiftType.ror
+			shift_value:    0x8
 		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -311,13 +311,13 @@ fn test_adc_register_ror_register() {
 	mut cpu := ARM7TDMI{}
 	cpu.set_state(cpu_state)
 	opcode := ADCOpcode{
-		rd: 0x2
-		rn: 0xE
+		rd:            0x2
+		rn:            0xE
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x3
+			rm:             0x3
 			register_shift: true
-			shift_type: biogba.ShiftType.ror
-			shift_value: 0x4
+			shift_type:     biogba.ShiftType.ror
+			shift_value:    0x4
 		}
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -345,11 +345,11 @@ fn test_adc_immediate_with_cflag_set() {
 	cpu.set_state(cpu_state)
 
 	opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandImmediate{
-			value: 0x3
+			value:  0x3
 			rotate: 0x1
 		}
 	}
@@ -372,11 +372,11 @@ fn test_adc_immediate_no_rot_c_unchanged() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandImmediate{
-			value: 0x3
+			value:  0x3
 			rotate: 0x0
 		}
 	}
@@ -400,14 +400,14 @@ fn test_adc_register_lsl_with_c_flag_set() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.lsl
-			shift_value: 0x1
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    0x1
 		}
 	}
 
@@ -430,14 +430,14 @@ fn test_adc_register_lsl_with_c_flag_reset() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.lsl
-			shift_value: 0x2
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    0x2
 		}
 	}
 
@@ -461,14 +461,14 @@ fn test_adc_register_lsr_with_cflag() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.lsr
-			shift_value: 0x1
+			shift_type:     biogba.ShiftType.lsr
+			shift_value:    0x1
 		}
 	}
 
@@ -492,14 +492,14 @@ fn test_adc_register_asr_with_cflag() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.asr
-			shift_value: 13
+			shift_type:     biogba.ShiftType.asr
+			shift_value:    13
 		}
 	}
 
@@ -523,14 +523,14 @@ fn test_adc_register_ror_with_cflag() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.ror
-			shift_value: 5
+			shift_type:     biogba.ShiftType.ror
+			shift_value:    5
 		}
 	}
 
@@ -557,14 +557,14 @@ fn test_adc_lsr32() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.lsr
-			shift_value: 0
+			shift_type:     biogba.ShiftType.lsr
+			shift_value:    0
 		}
 	}
 
@@ -591,14 +591,14 @@ fn test_adc_asr32() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.asr
-			shift_value: 0
+			shift_type:     biogba.ShiftType.asr
+			shift_value:    0
 		}
 	}
 
@@ -635,14 +635,14 @@ fn test_adc_rxx() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.ror
-			shift_value: 0
+			shift_type:     biogba.ShiftType.ror
+			shift_value:    0
 		}
 	}
 
@@ -671,14 +671,14 @@ fn test_adc_v_flag_set() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.lsl
-			shift_value: 1
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    1
 		}
 	}
 
@@ -704,14 +704,44 @@ fn test_adc_v_flag_reset() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.lsl
-			shift_value: 1
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    1
+		}
+	}
+
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert !result.cpsr.v
+}
+
+/*
+Test v flag is not set when s bit is not active even
+if the result has an overflow
+*/
+fn test_adc_v_flag_with_s_unset() {
+	mut cpu_state := CPUState{}
+	cpu_state.r[0x0] = 0x0000_0000
+	cpu_state.r[0x1] = 0x7FFF_FFFF
+	cpu_state.r[0x2] = 0x0000_0001
+
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+
+	mut opcode := ADCOpcode{
+		rd:            0x0
+		rn:            0x1
+		s_bit:         false
+		shift_operand: biogba.ShiftOperandRegister{
+			rm:             0x2
+			register_shift: false
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    1
 		}
 	}
 
@@ -736,14 +766,14 @@ fn test_adc_z_flag_set() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.lsl
-			shift_value: 0
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    0
 		}
 	}
 
@@ -765,20 +795,50 @@ fn test_adc_z_flag_reset() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.lsl
-			shift_value: 0
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    0
 		}
 	}
 
 	cpu.execute_opcode(opcode.as_hex())
 	result := cpu.get_state()
 	assert !result.cpsr.z
+}
+
+/*
+Test that z flag remains set even if result is not zero when s bit is diabled
+*/
+fn test_adc_z_flag_s_unset() {
+	mut cpu_state := CPUState{}
+	cpu_state.cpsr.z = true
+	cpu_state.r[0x0] = 0xFFFF_FFFF
+	cpu_state.r[0x1] = 0x7FFF_FFFF
+	cpu_state.r[0x2] = 0x0000_0001
+
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+
+	mut opcode := ADCOpcode{
+		rd:            0x0
+		rn:            0x1
+		s_bit:         false
+		shift_operand: biogba.ShiftOperandRegister{
+			rm:             0x2
+			register_shift: false
+			shift_type:     biogba.ShiftType.lsl
+			shift_value:    0
+		}
+	}
+
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert result.cpsr.z
 }
 
 /*
@@ -794,14 +854,14 @@ fn test_adc_n_flag_set() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.asr
-			shift_value: 1
+			shift_type:     biogba.ShiftType.asr
+			shift_value:    1
 		}
 	}
 
@@ -823,18 +883,67 @@ fn test_adc_n_flag_reset() {
 	cpu.set_state(cpu_state)
 
 	mut opcode := ADCOpcode{
-		rd: 0x0
-		rn: 0x1
-		s_bit: true
+		rd:            0x0
+		rn:            0x1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 0x2
+			rm:             0x2
 			register_shift: false
-			shift_type: biogba.ShiftType.asr
-			shift_value: 1
+			shift_type:     biogba.ShiftType.asr
+			shift_value:    1
 		}
 	}
 
 	cpu.execute_opcode(opcode.as_hex())
 	result := cpu.get_state()
 	assert !result.cpsr.n
+}
+
+/*
+Test ADC special case when Rd is 15 and s bit is set
+
+CSPR gets updated with the value of SPSR of the current mode
+The test starts with cpu in irq mode and a saved spsr with user mode
+After the ADC opcode executes, the cpsr should have user mode besides
+all other spsr bits.
+*/
+fn test_adc_spsr() {
+	mut cpu_state := CPUState{}
+	spsr := biogba.PSR{
+		mode: biogba.CPUMode.user
+		i:    false
+		f:    true
+		t:    false
+		c:    false
+		v:    true
+		z:    false
+		n:    true
+	}
+	cpu_state.spsr_irq = spsr
+	cpu_state.cpsr.mode = biogba.CPUMode.irq
+	cpu_state.cpsr.c = false
+	cpu_state.cpsr.v = false
+	cpu_state.cpsr.z = true
+	cpu_state.cpsr.n = false
+	cpu_state.r[15] = 0 // rd
+	cpu_state.r[0x1] = 0x7FFF_0000 // rn
+	cpu_state.r[0x2] = 0x0000_1000 // rm
+
+	mut cpu := ARM7TDMI{}
+	cpu.set_state(cpu_state)
+	opcode := ADCOpcode{
+		rd:            15
+		rn:            1
+		s_bit:         true
+		shift_operand: biogba.ShiftOperandRegister{
+			rm:             0x2
+			register_shift: false
+			shift_type:     biogba.ShiftType.asr
+			shift_value:    1
+		}
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert result.cpsr == spsr
+	assert result.r[15] == 0x7FFF_0800
 }

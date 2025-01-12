@@ -1,5 +1,5 @@
 import biogba
-import biogba.arm_assembler {opcode_from_string}
+import biogba.arm_assembler { opcode_from_string }
 
 /*
 Test and opcode in immediate mode
@@ -9,12 +9,12 @@ fn test_assembler_and_immediate_mode() {
 
 	opcode := opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ANDOpcode{
-		condition: biogba.OpcodeCondition.al
-		rd: 0
-		rn: 1
-		s_bit: false
+		condition:     biogba.OpcodeCondition.al
+		rd:            0
+		rn:            1
+		s_bit:         false
 		shift_operand: biogba.ShiftOperandImmediate{
-			value: 1
+			value:  1
 			rotate: 14
 		}
 	}
@@ -33,15 +33,15 @@ fn test_assembler_and_register_immediate_mode() {
 
 	opcode := opcode_from_string(opcode_string) or { panic(err) }
 	expected_opcode := biogba.ANDOpcode{
-		condition: biogba.OpcodeCondition.eq
-		rd: 0
-		rn: 1
-		s_bit: true
+		condition:     biogba.OpcodeCondition.eq
+		rd:            0
+		rn:            1
+		s_bit:         true
 		shift_operand: biogba.ShiftOperandRegister{
-			rm: 2
+			rm:             2
 			register_shift: false
-			shift_type: biogba.ShiftType.asr
-			shift_value: 0x10
+			shift_type:     biogba.ShiftType.asr
+			shift_value:    0x10
 		}
 	}
 

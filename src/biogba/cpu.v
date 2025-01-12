@@ -2,26 +2,53 @@ module biogba
 
 import math.bits { rotate_left_32 }
 
-pub struct CPSR {
-pub mut:
-	c bool
-	v bool
-	z bool
-	n bool
+pub enum CPUMode {
+	user       = 0b10000
+	fiq        = 0b10001
+	irq        = 0b10010
+	supervisor = 0b10011
+	abort      = 0b10111
+	undefined  = 0b11011
+	system     = 0b11111
+}
 
-	t bool
+// Processor Satus Register
+pub struct PSR {
+pub mut:
+	c bool // carry/overflow flag
+	v bool // overflow flag
+	z bool // zero flag
+	n bool // negative flag
+
+	i bool // IRQ disabled flag
+	f bool // FIQ disabled flag
+	t bool // Thumb mode flag
+
+	mode CPUMode = .user
 }
 
 pub struct CPUState {
 pub mut:
-	r    [16]u32
-	cpsr CPSR
+	r               [16]u32
+	cpsr            PSR
+	spsr_fiq        PSR
+	spsr_irq        PSR
+	spsr_supervisor PSR
+	spsr_abort      PSR
+	spsr_undefined  PSR
+	spsr_system     PSR
 }
 
 pub struct ARM7TDMI {
 mut:
-	r    [16]u32
-	cpsr CPSR
+	r               [16]u32
+	cpsr            PSR
+	spsr_fiq        PSR
+	spsr_irq        PSR
+	spsr_supervisor PSR
+	spsr_abort      PSR
+	spsr_undefined  PSR
+	spsr_system     PSR
 pub mut:
 	memory MemoryInterface
 }
@@ -31,6 +58,12 @@ pub fn (mut self ARM7TDMI) set_state(state CPUState) {
 		self.r[i] = state.r[i]
 	}
 	self.cpsr = state.cpsr
+	self.spsr_fiq = state.spsr_fiq
+	self.spsr_irq = state.spsr_irq
+	self.spsr_supervisor = state.spsr_supervisor
+	self.spsr_abort = state.spsr_abort
+	self.spsr_undefined = state.spsr_undefined
+	self.spsr_system = state.spsr_system
 }
 
 pub fn (self ARM7TDMI) get_state() CPUState {
@@ -39,6 +72,12 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 		result.r[i] = reg
 	}
 	result.cpsr = self.cpsr
+	result.spsr_fiq = self.spsr_fiq
+	result.spsr_irq = self.spsr_irq
+	result.spsr_supervisor = self.spsr_supervisor
+	result.spsr_abort = self.spsr_abort
+	result.spsr_undefined = self.spsr_undefined
+	result.spsr_system = self.spsr_system
 	return result
 }
 
@@ -100,7 +139,7 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					1 { self.r[rn] + offset }
 					else { panic('u_bit is not binary!') }
 				}
-				println('R${rn}: ${self.r[rn].hex()}, Offset: ${offset.hex()}')
+				// println('R${rn}: ${self.r[rn].hex()}, Offset: ${offset.hex()}')
 				value := match is_preindex {
 					true {
 						if writeback {
@@ -126,6 +165,7 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				rn := (opcode >> 16) & 0xF
 				rd := (opcode >> 12) & 0xF
 				operand_value := self.get_shift_operand_value(opcode)
+				s_bit := ((opcode >> 20) & 1) == 1
 				result := match data_processing_opcode {
 					0 { // AND
 						self.r[rd] = self.r[rn] & operand_value
@@ -162,9 +202,27 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 						0
 					}
 				}
-				self.cpsr.v = ((self.r[rn] ^ operand_value ^ result) & 0x8000_0000) != 0
-				self.cpsr.z = result == 0
-				self.cpsr.n = (result & 0x8000_0000) != 0
+				if s_bit {
+					if rd == 15 {
+						println(self.cpsr.mode)
+						self.cpsr = match self.cpsr.mode {
+							// .user {self.spsr_user}
+							.fiq {self.spsr_fiq}
+							.irq {self.spsr_irq}
+							.supervisor {self.spsr_supervisor}
+							.abort {self.spsr_abort}
+							.undefined {self.spsr_undefined}
+							.system {self.spsr_system}
+							else {
+								panic('Loading SPSR from user mode or wrong mode')
+							}
+						}
+					} else {
+						self.cpsr.v = ((self.r[rn] ^ operand_value ^ result) & 0x8000_0000) != 0
+						self.cpsr.z = result == 0
+						self.cpsr.n = (result & 0x8000_0000) != 0
+					}
+				}
 			}
 		}
 		1 {

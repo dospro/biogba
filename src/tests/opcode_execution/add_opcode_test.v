@@ -407,7 +407,7 @@ fn test_add_rxx() {
 
 /*
 Flag v is set when there is an overflow in bit 31
-This mena that whenever 2 operands have the same sign bit
+This means that whenever 2 operands have the same sign bit
 the result should have the same sign bit
 In this test we add 1 to 0x7FFF_FFFF which sets bit 31 of the result
 So since both operands had bit 31 unset, the v flag gets set.
