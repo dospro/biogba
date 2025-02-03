@@ -27,6 +27,19 @@ pub mut:
 	mode CPUMode = .user
 }
 
+pub fn (psr PSR) to_hex() u32 {
+	n_part := if psr.n { u32(0x8000_0000) } else { u32(0) }
+	z_part := if psr.z { u32(0x4000_0000) } else { u32(0) }
+	c_part := if psr.c { u32(0x2000_0000) } else { u32(0) }
+	v_part := if psr.v { u32(0x1000_0000) } else { u32(0) }
+
+	i_part := if psr.i { u32(0x80) } else { u32(0) }
+	f_part := if psr.f { u32(0x40) } else { u32(0) }
+	t_part := if psr.t { u32(0x20) } else { u32(0) }
+	mode_part := u32(psr.mode)
+	return n_part | z_part | c_part | v_part | i_part | f_part | t_part | mode_part
+}
+
 pub struct CPUState {
 pub mut:
 	r               [16]u32
@@ -79,6 +92,18 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 	result.spsr_undefined = self.spsr_undefined
 	result.spsr_system = self.spsr_system
 	return result
+}
+
+pub fn (self ARM7TDMI) get_current_spsr() PSR {
+	return match self.cpsr.mode {
+		.fiq { self.spsr_fiq }
+		.irq { self.spsr_irq }
+		.supervisor { self.spsr_supervisor }
+		.abort { self.spsr_abort }
+		.undefined { self.spsr_undefined }
+		.system { self.spsr_system }
+		else { panic('Loading SPSR from user mode or wrong mode') }
+	}
 }
 
 pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
@@ -160,6 +185,16 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				} else {
 					u32(value)
 				}
+			} else if (opcode & 0x1BF_0FFF) == 0x010F_0000 {
+				p_bit := (opcode >> 22) & 1
+				value := match p_bit {
+					0 { self.cpsr.to_hex() }
+					1 { self.get_current_spsr().to_hex() }
+					else { panic('p_bit is not binary!') }
+				}
+
+				rd := (opcode >> 12) & 0xF
+				self.r[rd] = value
 			} else {
 				data_processing_opcode := (opcode >> 21) & 0xF
 				rn := (opcode >> 16) & 0xF
@@ -204,19 +239,7 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				}
 				if s_bit {
 					if rd == 15 {
-						println(self.cpsr.mode)
-						self.cpsr = match self.cpsr.mode {
-							// .user {self.spsr_user}
-							.fiq {self.spsr_fiq}
-							.irq {self.spsr_irq}
-							.supervisor {self.spsr_supervisor}
-							.abort {self.spsr_abort}
-							.undefined {self.spsr_undefined}
-							.system {self.spsr_system}
-							else {
-								panic('Loading SPSR from user mode or wrong mode')
-							}
-						}
+						self.cpsr = self.get_current_spsr()
 					} else {
 						self.cpsr.v = ((self.r[rn] ^ operand_value ^ result) & 0x8000_0000) != 0
 						self.cpsr.z = result == 0
