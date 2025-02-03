@@ -95,7 +95,7 @@ pub fn (opcode ANDOpcode) as_hex() u32 {
 pub struct BOpcode {
 pub:
 	condition      OpcodeCondition = OpcodeCondition.al
-	l_flag         bool = false
+	l_flag         bool            = false
 	target_address u32
 }
 
@@ -234,14 +234,14 @@ pub type LDRSBHOffset = Register | u8
 pub struct LDRSBHOpcode {
 pub:
 	condition OpcodeCondition = OpcodeCondition.al
-	rn u8
-	rd u8
-	p_bit bool = true
-	u_bit bool = true
-	w_bit bool = false
-	s_bit bool = false
-	h_bit bool = true
-	address LDRSBHOffset
+	rn        u8
+	rd        u8
+	p_bit     bool = true
+	u_bit     bool = true
+	w_bit     bool = false
+	s_bit     bool = false
+	h_bit     bool = true
+	address   LDRSBHOffset
 }
 
 pub fn (opcode LDRSBHOpcode) as_hex() u32 {
@@ -262,7 +262,6 @@ pub fn (opcode LDRSBHOpcode) as_hex() u32 {
 			u32(opcode.address)
 		}
 	}
-	
 
 	if !opcode.s_bit && !opcode.h_bit {
 		panic('Bad Opcode: S and H flags cannot be both zero.')
@@ -273,12 +272,12 @@ pub fn (opcode LDRSBHOpcode) as_hex() u32 {
 pub struct MULOpcode {
 pub:
 	condition OpcodeCondition = OpcodeCondition.al
-	rd u8
-	rn u8
-	rs u8
-	rm u8
-	s_bit bool
-	a_bit bool
+	rd        u8
+	rn        u8
+	rs        u8
+	rm        u8
+	s_bit     bool
+	a_bit     bool
 }
 
 pub fn (opcode MULOpcode) as_hex() u32 {
@@ -300,4 +299,19 @@ pub struct MOVOpcode {
 pub fn (opcode MOVOpcode) as_hex() u32 {
 	opcode_part := u32(0x01A0_0000)
 	return opcode_part | opcode.DataProcessingOpcode.as_hex()
+}
+
+pub struct MRSOpcode {
+pub:
+	condition OpcodeCondition = OpcodeCondition.al
+	rd        u8
+	p_bit     bool
+}
+
+pub fn (opcode MRSOpcode) as_hex() u32 {
+	opcode_part := u32(0x010F_0000)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	rd_part := u32(opcode.rd) << 12
+	p_part := if opcode.p_bit { u32(0x40_0000) } else { u32(0) }
+	return condition_part | rd_part | p_part | opcode_part
 }
