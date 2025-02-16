@@ -315,3 +315,31 @@ pub fn (opcode MRSOpcode) as_hex() u32 {
 	p_part := if opcode.p_bit { u32(0x40_0000) } else { u32(0) }
 	return condition_part | rd_part | p_part | opcode_part
 }
+
+pub type MSRShiftOperand = ShiftOperandImmediate | u8
+
+pub struct MSROpcode {
+pub:
+	condition     OpcodeCondition = OpcodeCondition.al
+	p_bit         bool
+	c_flag        bool = true
+	x_flag        bool
+	s_flag        bool
+	f_flag        bool = true
+	shift_operand MSRShiftOperand = u8(0)
+}
+
+pub fn (opcode MSROpcode) as_hex() u32 {
+	opcode_part := u32(0x0120_F000)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	shift_operand_part := match opcode.shift_operand {
+		u8 { u32(opcode.shift_operand) }
+		ShiftOperandImmediate { opcode.shift_operand.as_hex() }
+	}
+	p_part := if opcode.p_bit { u32(0x40_0000) } else { u32(0) }
+	c_part := if opcode.c_flag { u32(0x1_0000) } else { u32(0) }
+	x_part := if opcode.x_flag { u32(0x2_0000) } else { u32(0) }
+	s_part := if opcode.s_flag { u32(0x4_0000) } else { u32(0) }
+	f_part := if opcode.f_flag { u32(0x8_0000) } else { u32(0) }
+	return condition_part | shift_operand_part | p_part | c_part | x_part | s_part | f_part | opcode_part
+}
