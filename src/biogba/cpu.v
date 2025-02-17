@@ -40,6 +40,28 @@ pub fn (psr PSR) to_hex() u32 {
 	return n_part | z_part | c_part | v_part | i_part | f_part | t_part | mode_part
 }
 
+pub fn (mut psr PSR) from_value(value u32) {
+	psr.n = (value & 0x8000_0000) != 0
+	psr.z = (value & 0x4000_0000) != 0
+	psr.c = (value & 0x2000_0000) != 0
+	psr.v = (value & 0x1000_0000) != 0
+
+	psr.i = (value & 0x80) != 0
+	psr.f = (value & 0x40) != 0
+	psr.t = (value & 0x20) != 0
+
+	psr.mode = match value & 0x1F {
+		0b10000 { .user }
+		0b10001 { .fiq }
+		0b10010 { .irq }
+		0b10011 { .supervisor }
+		0b10111 { .abort }
+		0b11011 { .undefined }
+		0b11111 { .system }
+		else { panic('Undefined PSR mode ${value.hex()}') }
+	}
+}
+
 pub struct CPUState {
 pub mut:
 	r               [16]u32
@@ -103,6 +125,18 @@ pub fn (self ARM7TDMI) get_current_spsr() PSR {
 		.undefined { self.spsr_undefined }
 		.system { self.spsr_system }
 		else { panic('Loading SPSR from user mode or wrong mode') }
+	}
+}
+
+pub fn (mut self ARM7TDMI) set_current_spsr(value u32) {
+	match self.cpsr.mode {
+		.fiq { self.spsr_fiq.from_value(value) }
+		.irq { self.spsr_irq.from_value(value) }
+		.supervisor { self.spsr_supervisor.from_value(value) }
+		.abort { self.spsr_abort.from_value(value) }
+		.undefined { self.spsr_undefined.from_value(value) }
+		.system { self.spsr_system.from_value(value) }
+		else { panic('Writing to an unkown PSR') }
 	}
 }
 
@@ -185,7 +219,49 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				} else {
 					u32(value)
 				}
-			} else if (opcode & 0x1BF_0FFF) == 0x010F_0000 {
+			} else if (opcode & 0x1B0_F000) == 0x120_F000 { // MSR
+				is_immediate := ((opcode >> 25) & 1) == 1
+				p_bit := ((opcode >> 22) & 1) == 1
+				f_mask := ((opcode >> 19) & 1) == 1
+				c_mask := ((opcode >> 16) & 1) == 1
+				mut value := match is_immediate {
+					true {
+						rot_part := 2 * ((opcode >> 8) & 0xF)
+						mut operand_value := opcode & 0xFF
+
+						for _ in 0 .. rot_part {
+							bit := operand_value & 1
+							operand_value >>= 1
+							operand_value |= (bit << 31)
+						}
+						operand_value
+					}
+					false {
+						rm := opcode & 0xF
+						self.r[rm]
+					}
+				}
+
+				if p_bit {
+					mut current_psr_value := self.get_current_spsr().to_hex()
+					if c_mask && self.cpsr.mode != .user {
+						current_psr_value = (current_psr_value & 0xFFFF_FF00) | (value & 0xFF)
+					}
+					if f_mask {
+						current_psr_value = (current_psr_value & 0x0FFF_FFFF) | (value & 0xF000_0000)
+					}
+					self.set_current_spsr(current_psr_value)
+				} else {
+					mut current_psr_value := self.cpsr.to_hex()
+					if c_mask && self.cpsr.mode != .user {
+						current_psr_value = (current_psr_value & 0xFFFF_FF00) | (value & 0xFF)
+					}
+					if f_mask {
+						current_psr_value = (current_psr_value & 0x0FFF_FFFF) | (value & 0xF000_0000)
+					}
+					self.cpsr.from_value(current_psr_value)
+				}
+			} else if (opcode & 0x1BF_0FFF) == 0x010F_0000 { // MRS
 				p_bit := (opcode >> 22) & 1
 				value := match p_bit {
 					0 { self.cpsr.to_hex() }
