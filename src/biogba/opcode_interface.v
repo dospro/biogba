@@ -325,7 +325,7 @@ pub:
 	c_flag        bool = true
 	x_flag        bool
 	s_flag        bool
-	f_flag        bool = true
+	f_flag        bool            = true
 	shift_operand MSRShiftOperand = u8(0)
 }
 
@@ -342,4 +342,13 @@ pub fn (opcode MSROpcode) as_hex() u32 {
 	s_part := if opcode.s_flag { u32(0x4_0000) } else { u32(0) }
 	f_part := if opcode.f_flag { u32(0x8_0000) } else { u32(0) }
 	return condition_part | shift_operand_part | p_part | c_part | x_part | s_part | f_part | opcode_part
+}
+
+pub struct MVNOpcode {
+	DataProcessingOpcode
+}
+
+pub fn (opcode MVNOpcode) as_hex() u32 {
+	opcode_part := u32(0x01E0_0000)
+	return opcode_part | opcode.DataProcessingOpcode.as_hex()
 }

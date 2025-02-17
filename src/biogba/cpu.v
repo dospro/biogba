@@ -309,6 +309,10 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 						self.r[rd] = self.r[rn] & ~operand_value
 						self.r[rd]
 					}
+					0xF { // MVN
+						self.r[rd] = operand_value ^ 0xFFFF_FFFF
+						operand_value ^ 0xFFFF_FFFF
+					}
 					else {
 						0
 					}
