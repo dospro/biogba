@@ -352,3 +352,21 @@ pub fn (opcode MVNOpcode) as_hex() u32 {
 	opcode_part := u32(0x01E0_0000)
 	return opcode_part | opcode.DataProcessingOpcode.as_hex()
 }
+
+pub struct ORROpcode {
+	DataProcessingOpcode
+}
+
+pub fn (opcode ORROpcode) as_hex() u32 {
+	opcode_part := u32(0x0180_0000)
+	return opcode_part | opcode.DataProcessingOpcode.as_hex()
+}
+
+pub struct RSBOpcode {
+	DataProcessingOpcode
+}
+
+pub fn (opcode RSBOpcode) as_hex() u32 {
+	opcode_part := u32(0x0060_0000)
+	return opcode_part | opcode.DataProcessingOpcode.as_hex()
+}

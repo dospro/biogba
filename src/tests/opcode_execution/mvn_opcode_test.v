@@ -16,7 +16,7 @@ Test MVN opcode loads a value into a register
 Note: For MOV opcode, Rn is ignored. The operation is:
 Rd = !(0xFF ROR 4) (rotate right)
 */
-fn test_mov() {
+fn test_mvn() {
 	mut cpu_state := CPUState{}
 	cpu_state.r[3] = 0 // rd
 	cpu_state.r[5] = 0x0101_FFFF // rn (ignored)
@@ -50,7 +50,7 @@ The test will first start in supervisor mode
 with specific CPSR and then the MOVS R15, #10
 should copy spsr into cpsr
 */
-fn test_mov_r15_s_edge_case() {
+fn test_mvn_r15_s_edge_case() {
 	mut cpu_state := CPUState{}
 	spsr := biogba.PSR{
 		mode: biogba.CPUMode.system
