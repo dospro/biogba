@@ -388,3 +388,28 @@ pub fn (opcode SBCOpcode) as_hex() u32 {
 	opcode_part := u32(0x00C0_0000)
 	return opcode_part | opcode.DataProcessingOpcode.as_hex()
 }
+
+pub struct MULLOpcode {
+pub:
+	condition OpcodeCondition = OpcodeCondition.al
+	rm        u8              = 3
+	rs        u8              = 2
+	rdlo      u8              = 1
+	rdhi      u8
+	s_bit     bool
+	a_bit     bool
+	u_bit     bool
+}
+
+pub fn (opcode MULLOpcode) as_hex() u32 {
+	opcode_part := u32(0x0080_0090)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	u_part := if opcode.u_bit { u32(0x40_0000) } else { u32(0) }
+	a_part := if opcode.a_bit { u32(0x20_0000) } else { u32(0) }
+	s_part := if opcode.s_bit { u32(0x10_0000) } else { u32(0) }
+	rdhi_part := u32(opcode.rdhi) << 16
+	rdlo_part := u32(opcode.rdlo) << 12
+	rs_part := u32(opcode.rs) << 8
+	rm_part := u32(opcode.rm) & 0xF
+	return condition_part | u_part | a_part | s_part | rdhi_part | rdlo_part | rs_part | rm_part | opcode_part
+}
