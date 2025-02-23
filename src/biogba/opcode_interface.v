@@ -370,3 +370,12 @@ pub fn (opcode RSBOpcode) as_hex() u32 {
 	opcode_part := u32(0x0060_0000)
 	return opcode_part | opcode.DataProcessingOpcode.as_hex()
 }
+
+pub struct RSCOpcode {
+	DataProcessingOpcode
+}
+
+pub fn (opcode RSCOpcode) as_hex() u32 {
+	opcode_part := u32(0x00E0_0000)
+	return opcode_part | opcode.DataProcessingOpcode.as_hex()
+}

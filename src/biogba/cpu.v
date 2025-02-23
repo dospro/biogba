@@ -298,6 +298,10 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 						self.r[rd] = self.r[rn] + c_part + operand_value
 						self.r[rd]
 					}
+					7 { // RSC
+						self.r[rd] = operand_value - self.r[rn] + c_part - 1
+						self.r[rd]
+					}
 					0xA { // CMP
 						self.r[rn] - operand_value
 					}
