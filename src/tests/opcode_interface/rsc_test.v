@@ -13,7 +13,7 @@ of this interface have already been tested.
 /*
 Test RSC opcode interface with default values
 */
-fn test_orr_default() {
+fn test_rsc_default() {
 	opcode := RSCOpcode{}
 	hex_value := opcode.as_hex()
 	assert hex_value == 0xE2E0_0000
@@ -23,7 +23,7 @@ fn test_orr_default() {
 Test RSC opcode interface with no default values
 Use specific values for all options
 */
-fn test_orr_no_default() {
+fn test_rsc_no_default() {
 	opcode := RSCOpcode{
 		condition:     OpcodeCondition.ne
 		rd:            14

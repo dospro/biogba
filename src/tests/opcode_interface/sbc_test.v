@@ -1,30 +1,30 @@
 import biogba {
-	RSBOpcode,
+	SBCOpcode,
 	OpcodeCondition,
 	ShiftOperandRegister,
 	ShiftType,
 }
 
 /*
-RSB is a data processing opcode, so all the variation
+SBC is a data processing opcode, so all the variation
 of this interface have already been tested.
 */
 
 /*
-Test RSB opcode interface with default values
+Test SBC opcode interface with default values
 */
-fn test_rsb_default() {
-	opcode := RSBOpcode{}
+fn test_sbc_default() {
+	opcode := SBCOpcode{}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0xE260_0000
+	assert hex_value == 0xE2C0_0000
 }
 
 /*
-Test RSB opcode interface with no default values
+Test SBC opcode interface with no default values
 Use specific values for all options
 */
-fn test_rsb_no_default() {
-	opcode := RSBOpcode{
+fn test_sbc_no_default() {
+	opcode := SBCOpcode{
 		condition:     OpcodeCondition.ne
 		rd:            14
 		rn:            10
@@ -37,5 +37,5 @@ fn test_rsb_no_default() {
 		}
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0x107A_EF18
+	assert hex_value == 0x10DA_EF18
 }
