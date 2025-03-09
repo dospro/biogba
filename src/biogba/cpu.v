@@ -158,6 +158,30 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					self.cpsr.t = true
 				}
 				self.r[15] = self.r[rm] & 0xFFFF_FFFE
+			} else if (opcode & 0x0F80_00F0) == 0x80_0090 { // MULL
+				rdhi := (opcode >> 16) & 0xF
+				rdlo := (opcode >> 12) & 0xF
+				rs := (opcode >> 8) & 0xF
+				rm := opcode & 0xF
+				is_signed := ((opcode >> 22) & 1) == 1
+				accumulate := ((opcode >> 21) & 1) == 1
+				s_bit := ((opcode >> 20) & 1) == 1
+				product := if is_signed {
+					u64(i64(int(self.r[rs])) * i64(int(self.r[rm])))
+				} else {
+					u64(self.r[rs]) * u64(self.r[rm])
+				}
+				final_sum := if accumulate {
+					((u64(self.r[rdhi]) << 32) | u64(self.r[rdlo])) + product
+				} else {
+					product
+				}
+				if s_bit {
+					self.cpsr.z = final_sum == 0
+					self.cpsr.n = (final_sum >> 63) == 1
+				}
+				self.r[rdhi] = u32(final_sum >> 32)
+				self.r[rdlo] = u32(final_sum & 0xFFFF_FFFF)
 			} else if (opcode & 0x0FC0_0090) == 0x90 { // MUL
 				rd := (opcode >> 16) & 0xF
 				rn := (opcode >> 12) & 0xF
@@ -299,7 +323,7 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 						self.r[rd]
 					}
 					6 { // SBC
-						self.r[rd] = self.r[rn] - operand_value  + c_part - 1
+						self.r[rd] = self.r[rn] - operand_value + c_part - 1
 						self.r[rd]
 					}
 					7 { // RSC
