@@ -307,6 +307,43 @@ fn test_stm_rn_in_register_second() {
 }
 
 /*
+Test STM Opcode when Rn is the second register in register list
+with decrement and postindex.
+
+This applys only with writeback
+
+When Rn is included as the second or above element in the list, STM
+stores the updated value
+*/
+fn test_stm_rn_in_register_second_decrement() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0, [u32(0)])
+	mut cpu_state := CPUState{}
+	cpu_state.r[3] = 0x1111_2222 // source register
+	cpu_state.r[4] = 0x20 // Rn
+	cpu_state.r[5] = 0x3333_4444 // source register
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.STMOpcode {
+		rn: 4
+		u_bit: false
+		w_bit: true
+		register_list: [.r3, .r4, .r5]
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	assert memory.read32(0x20) == 0x3333_4444
+	assert memory.read32(0x20 - 4) == 0x20 - 0xC
+	assert memory.read32(0x20 - 8) == 0x1111_2222
+	assert result.r[4] == 0x20 - 0xC
+}
+
+/*
 Test STM Opcode with S bit
 When S bit is set, STM stores User bank registers.
 For example IRQ mode has its own R13 and R14 banked registers,
@@ -443,7 +480,36 @@ fn test_stm_s_bit_in_supervisor_mode() {
 }
 
 /*
-When storing R15 we should store R15 +12 because of the prefetch
-We will test this when testing small programs.
-// TODO
+TODO: Test STM Opcode when storing R15 (PC)
+
+When R15 is stored, the value written to memory should be R15+12
+due to the ARM7TDMI's instruction prefetch behavior.
+
+This test is currently flagged because the +12 offset should be handled
+by proper pipeline implementation, not by STM opcode itself. When the
+pipeline is implemented (R15 naturally advancing during fetch/decode/execute),
+this test can be enabled and should pass without special handling in STM.
 */
+// fn test_stm_stores_r15_plus_12() {
+// 	mut memory := mocks.MemoryFake{}
+// 	memory.set_values32(0, [u32(0)])
+// 	mut cpu_state := CPUState{}
+// 	cpu_state.r[15] = 0x1000 // Program counter
+// 	cpu_state.r[0] = 0x0 // Base address for storing
+// 	cpu_state.r[3] = 0x1111_2222 // Another register to store
+
+// 	mut cpu := ARM7TDMI{
+// 		memory: memory
+// 	}
+// 	cpu.set_state(cpu_state)
+
+// 	opcode := biogba.STMOpcode{
+// 		rn: 0
+// 		register_list: [.r3, .r15]
+// 	}
+// 	cpu.execute_opcode(opcode.as_hex())
+// 	result := cpu.get_state()
+
+// 	assert memory.read32(0) == 0x1111_2222
+// 	assert memory.read32(4) == 0x1000 + 12 // R15 should be stored as R15+12
+// }

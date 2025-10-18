@@ -605,45 +605,39 @@ pub fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 
 fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
-	u_flag := (opcode & 0x80_0000) != 0
 	p_flag := (opcode & 0x100_0000) != 0
+	u_flag := (opcode & 0x80_0000) != 0
 	w_flag := (opcode & 0x20_0000) != 0
 
-	// If u_flag is set then we increment, otherwise decrement
+	mut address := self.state.r[rn]
 	delta := if u_flag { u32(4) } else { u32(-4) }
 
-	mut offset := self.state.r[rn]
-	if u_flag {
-		for i in 0 .. 16 {
-			if (opcode & (1 << i)) != 0 {
-				if p_flag {
-					offset += delta
-					value := self.memory.read32(offset)
-					self.state.r[i] = value
-				} else {
-					value := self.memory.read32(offset)
-					self.state.r[i] = value
-					offset += delta
-				}
+	// Single loop that handles both increment and decrement modes
+	// For increment: iterate 0->15, for decrement: iterate 15->0
+	for loop_idx in 0 .. 16 {
+		reg_idx := if u_flag { loop_idx } else { 15 - loop_idx }
+
+		if (opcode & (1 << reg_idx)) != 0 {
+			// Apply offset before loading if pre-indexed (p_flag set)
+			if p_flag {
+				address += delta
 			}
-		}
-	} else {
-		for i := 15; i >= 0; i -= 1 {
-			if (opcode & (1 << i)) != 0 {
-				if p_flag {
-					offset += delta
-					value := self.memory.read32(offset)
-					self.state.r[i] = value
-				} else {
-					value := self.memory.read32(offset)
-					self.state.r[i] = value
-					offset += delta
-				}
+
+			// Load value from memory into register
+			value := self.memory.read32(address)
+			self.state.r[reg_idx] = value
+
+			// Apply offset after loading if post-indexed (p_flag not set)
+			if !p_flag {
+				address += delta
 			}
 		}
 	}
+
+	// Write-back: update base register
+	// ARM spec: "A LDM will always overwrite the updated base if the base is in the list"
 	if w_flag {
-		self.state.r[rn] = offset
+		self.state.r[rn] = address
 	}
 }
 
@@ -726,45 +720,44 @@ fn (mut self ARM7TDMI) stm_opcode(opcode u32) {
 	mut rn_offset := u32(0)
 	mut replace_rn_value := false
 
+	delta := if u_flag { u32(4) } else { u32(-4) }
 	// Determine which mode's registers to use
 	// When s_flag is set, use user mode registers regardless of current mode
 	// When s_flag is not set, use current mode's banked registers
 	mode := if s_flag { CPUMode.user } else { self.state.cpsr.mode }
 
-	if u_flag {
-		for i in 0 .. 16 {
-			if (opcode & (1 << i)) != 0 {
-				if rn == i && offset != self.state.r[rn] {
-					rn_offset = offset
-					replace_rn_value = true
-				}
-				if p_flag {
-					offset += 4
-					reg_value := self.state.get_register(u32(i), mode)
-					self.memory.write32(offset, reg_value)
-				} else {
-					reg_value := self.state.get_register(u32(i), mode)
-					self.memory.write32(offset, reg_value)
-					offset += 4
-				}
+	for index in 0 ..16 {
+		mut i := if u_flag { index } else { 15 - index }
+		if (opcode & (1 << i)) != 0 {
+			// Track when base register (Rn) is being stored and offset has changed
+			// This implements the ARM spec: "STM which includes storing the base, with
+			// the base as the first register to be stored, will store the unchanged value"
+			if rn == i && offset != self.state.r[rn] {
+				// Base is in the list but not the first register (offset has changed)
+				// Save this address to potentially write the modified base value later
+				rn_offset = offset
+				replace_rn_value = true
 			}
-		}
-	} else {
-		for i := 15; i >= 0; i -= 1 {
-			if (opcode & (1 << i)) != 0 {
-				reg_value := self.state.get_register(u32(i), mode)
-				if p_flag {
-					offset -= 4
-					self.memory.write32(offset, reg_value)
-				} else {
-					self.memory.write32(offset, reg_value)
-					offset -= 4
-				}
+			if p_flag {
+				offset += delta
+			}
+
+			reg_value := self.state.get_register(u32(i), mode)
+			self.memory.write32(offset, reg_value)
+
+			if !p_flag {
+				offset += delta
 			}
 		}
 	}
+	// Write-back: update base register at the end of the second cycle
+	// This implements the ARM spec: "the base is written back at the end of the second cycle"
 	if w_flag {
 		self.state.r[rn] = offset
+		// If the base register was stored and it wasn't the first register,
+		// we need to update memory with the modified (written-back) value
+		// This implements: "with the base second or later in the transfer order,
+		// will store the modified value"
 		if replace_rn_value {
 			self.memory.write32(rn_offset, self.state.r[rn])
 		}
