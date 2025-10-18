@@ -100,7 +100,7 @@ fn test_mul_updated_n_flag() {
 	result := cpu.get_state()
 
 	assert result.r[0] == 0x8000_0000
-	assert cpu.cpsr.n
+	assert result.cpsr.n
 }
 
 /*
@@ -130,7 +130,7 @@ fn test_mul_updated_z_flag() {
 	result := cpu.get_state()
 
 	assert result.r[0] == 0
-	assert cpu.cpsr.z
+	assert result.cpsr.z
 }
 
 /* 

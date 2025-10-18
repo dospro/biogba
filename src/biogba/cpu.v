@@ -201,216 +201,44 @@ pub fn (state CPUState) get_register(reg_num u32, mode CPUMode) u32 {
 }
 
 pub struct ARM7TDMI {
-mut:
-	r               [16]u32
-	r_fiq           [7]u32 // FIQ banked registers R8-R14 (indexed 0-6)
-	r13_irq         u32
-	r14_irq         u32
-	r13_supervisor  u32
-	r14_supervisor  u32
-	r13_abort       u32
-	r14_abort       u32
-	r13_undefined   u32
-	r14_undefined   u32
-	cpsr            PSR
-	spsr_fiq        PSR
-	spsr_irq        PSR
-	spsr_supervisor PSR
-	spsr_abort      PSR
-	spsr_undefined  PSR
-	spsr_system     PSR
 pub mut:
+	state  CPUState
 	memory MemoryInterface
 }
 
+@[inline]
 pub fn (mut self ARM7TDMI) set_state(state CPUState) {
-	for i, _ in self.r {
-		self.r[i] = state.r[i]
-	}
-	for i, _ in self.r_fiq {
-		self.r_fiq[i] = state.r_fiq[i]
-	}
-	self.r13_irq = state.r13_irq
-	self.r14_irq = state.r14_irq
-	self.r13_supervisor = state.r13_supervisor
-	self.r14_supervisor = state.r14_supervisor
-	self.r13_abort = state.r13_abort
-	self.r14_abort = state.r14_abort
-	self.r13_undefined = state.r13_undefined
-	self.r14_undefined = state.r14_undefined
-	self.cpsr = state.cpsr
-	self.spsr_fiq = state.spsr_fiq
-	self.spsr_irq = state.spsr_irq
-	self.spsr_supervisor = state.spsr_supervisor
-	self.spsr_abort = state.spsr_abort
-	self.spsr_undefined = state.spsr_undefined
-	self.spsr_system = state.spsr_system
+	self.state = state
 }
 
+@[inline]
 pub fn (self ARM7TDMI) get_state() CPUState {
-	mut result := CPUState{}
-	for i, reg in self.r {
-		result.r[i] = reg
-	}
-	for i, reg in self.r_fiq {
-		result.r_fiq[i] = reg
-	}
-	result.r13_irq = self.r13_irq
-	result.r14_irq = self.r14_irq
-	result.r13_supervisor = self.r13_supervisor
-	result.r14_supervisor = self.r14_supervisor
-	result.r13_abort = self.r13_abort
-	result.r14_abort = self.r14_abort
-	result.r13_undefined = self.r13_undefined
-	result.r14_undefined = self.r14_undefined
-	result.cpsr = self.cpsr
-	result.spsr_fiq = self.spsr_fiq
-	result.spsr_irq = self.spsr_irq
-	result.spsr_supervisor = self.spsr_supervisor
-	result.spsr_abort = self.spsr_abort
-	result.spsr_undefined = self.spsr_undefined
-	result.spsr_system = self.spsr_system
-	return result
+	return self.state
 }
 
+@[inline]
 pub fn (self ARM7TDMI) get_current_spsr() PSR {
-	return match self.cpsr.mode {
-		.fiq { self.spsr_fiq }
-		.irq { self.spsr_irq }
-		.supervisor { self.spsr_supervisor }
-		.abort { self.spsr_abort }
-		.undefined { self.spsr_undefined }
-		.system { self.spsr_system }
+	return match self.state.cpsr.mode {
+		.fiq { self.state.spsr_fiq }
+		.irq { self.state.spsr_irq }
+		.supervisor { self.state.spsr_supervisor }
+		.abort { self.state.spsr_abort }
+		.undefined { self.state.spsr_undefined }
+		.system { self.state.spsr_system }
 		else { panic('Loading SPSR from user mode or wrong mode') }
 	}
 }
 
+@[inline]
 pub fn (mut self ARM7TDMI) set_current_spsr(value u32) {
-	match self.cpsr.mode {
-		.fiq { self.spsr_fiq.from_value(value) }
-		.irq { self.spsr_irq.from_value(value) }
-		.supervisor { self.spsr_supervisor.from_value(value) }
-		.abort { self.spsr_abort.from_value(value) }
-		.undefined { self.spsr_undefined.from_value(value) }
-		.system { self.spsr_system.from_value(value) }
+	match self.state.cpsr.mode {
+		.fiq { self.state.spsr_fiq.from_value(value) }
+		.irq { self.state.spsr_irq.from_value(value) }
+		.supervisor { self.state.spsr_supervisor.from_value(value) }
+		.abort { self.state.spsr_abort.from_value(value) }
+		.undefined { self.state.spsr_undefined.from_value(value) }
+		.system { self.state.spsr_system.from_value(value) }
 		else { panic('Writing to an unkown PSR') }
-	}
-}
-
-// Read a register value for a specific CPU mode
-// Handles banked registers correctly based on mode
-pub fn (self ARM7TDMI) read_register(reg_num u32, mode CPUMode) u32 {
-	match mode {
-		.fiq {
-			// FIQ mode: R8-R14 are banked (stored in r_fiq[0-6])
-			if reg_num >= 8 && reg_num <= 14 {
-				return self.r_fiq[reg_num - 8]
-			}
-			return self.r[reg_num]
-		}
-		.irq {
-			// IRQ mode: R13-R14 are banked
-			if reg_num == 13 {
-				return self.r13_irq
-			}
-			if reg_num == 14 {
-				return self.r14_irq
-			}
-			return self.r[reg_num]
-		}
-		.supervisor {
-			// Supervisor mode: R13-R14 are banked
-			if reg_num == 13 {
-				return self.r13_supervisor
-			}
-			if reg_num == 14 {
-				return self.r14_supervisor
-			}
-			return self.r[reg_num]
-		}
-		.abort {
-			// Abort mode: R13-R14 are banked
-			if reg_num == 13 {
-				return self.r13_abort
-			}
-			if reg_num == 14 {
-				return self.r14_abort
-			}
-			return self.r[reg_num]
-		}
-		.undefined {
-			// Undefined mode: R13-R14 are banked
-			if reg_num == 13 {
-				return self.r13_undefined
-			}
-			if reg_num == 14 {
-				return self.r14_undefined
-			}
-			return self.r[reg_num]
-		}
-		.user, .system {
-			// User and System modes share the same register bank
-			return self.r[reg_num]
-		}
-	}
-}
-
-// Write a value to a register for a specific CPU mode
-// Handles banked registers correctly based on mode
-pub fn (mut self ARM7TDMI) write_register(reg_num u32, mode CPUMode, value u32) {
-	match mode {
-		.fiq {
-			// FIQ mode: R8-R14 are banked (stored in r_fiq[0-6])
-			if reg_num >= 8 && reg_num <= 14 {
-				self.r_fiq[reg_num - 8] = value
-			} else {
-				self.r[reg_num] = value
-			}
-		}
-		.irq {
-			// IRQ mode: R13-R14 are banked
-			if reg_num == 13 {
-				self.r13_irq = value
-			} else if reg_num == 14 {
-				self.r14_irq = value
-			} else {
-				self.r[reg_num] = value
-			}
-		}
-		.supervisor {
-			// Supervisor mode: R13-R14 are banked
-			if reg_num == 13 {
-				self.r13_supervisor = value
-			} else if reg_num == 14 {
-				self.r14_supervisor = value
-			} else {
-				self.r[reg_num] = value
-			}
-		}
-		.abort {
-			// Abort mode: R13-R14 are banked
-			if reg_num == 13 {
-				self.r13_abort = value
-			} else if reg_num == 14 {
-				self.r14_abort = value
-			} else {
-				self.r[reg_num] = value
-			}
-		}
-		.undefined {
-			// Undefined mode: R13-R14 are banked
-			if reg_num == 13 {
-				self.r13_undefined = value
-			} else if reg_num == 14 {
-				self.r14_undefined = value
-			} else {
-				self.r[reg_num] = value
-			}
-		}
-		.user, .system {
-			// User and System modes share the same register bank
-			self.r[reg_num] = value
-		}
 	}
 }
 
@@ -423,15 +251,15 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 
 	// Get higher 2 bits after condition
 	opcode_high_bits := (opcode >> 26) & 3
-	c_part := if self.cpsr.c { u32(1) } else { u32(0) }
+	c_part := if self.state.cpsr.c { u32(1) } else { u32(0) }
 	match opcode_high_bits {
 		0 {
 			if (opcode & 0x0FFF_FFF0) == 0x12F_FF10 { // BX
 				rm := opcode & 0xF
-				if (self.r[rm] & 1) != 0 {
-					self.cpsr.t = true
+				if (self.state.r[rm] & 1) != 0 {
+					self.state.cpsr.t = true
 				}
-				self.r[15] = self.r[rm] & 0xFFFF_FFFE
+				self.state.r[15] = self.state.r[rm] & 0xFFFF_FFFE
 			} else if (opcode & 0x0F80_00F0) == 0x80_0090 { // MULL
 				rdhi := (opcode >> 16) & 0xF
 				rdlo := (opcode >> 12) & 0xF
@@ -441,21 +269,21 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				accumulate := ((opcode >> 21) & 1) == 1
 				s_bit := ((opcode >> 20) & 1) == 1
 				product := if is_signed {
-					u64(i64(int(self.r[rs])) * i64(int(self.r[rm])))
+					u64(i64(int(self.state.r[rs])) * i64(int(self.state.r[rm])))
 				} else {
-					u64(self.r[rs]) * u64(self.r[rm])
+					u64(self.state.r[rs]) * u64(self.state.r[rm])
 				}
 				final_sum := if accumulate {
-					((u64(self.r[rdhi]) << 32) | u64(self.r[rdlo])) + product
+					((u64(self.state.r[rdhi]) << 32) | u64(self.state.r[rdlo])) + product
 				} else {
 					product
 				}
 				if s_bit {
-					self.cpsr.z = final_sum == 0
-					self.cpsr.n = (final_sum >> 63) == 1
+					self.state.cpsr.z = final_sum == 0
+					self.state.cpsr.n = (final_sum >> 63) == 1
 				}
-				self.r[rdhi] = u32(final_sum >> 32)
-				self.r[rdlo] = u32(final_sum & 0xFFFF_FFFF)
+				self.state.r[rdhi] = u32(final_sum >> 32)
+				self.state.r[rdlo] = u32(final_sum & 0xFFFF_FFFF)
 			} else if (opcode & 0x0FC0_0090) == 0x90 { // MUL
 				rd := (opcode >> 16) & 0xF
 				rn := (opcode >> 12) & 0xF
@@ -463,19 +291,19 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				rm := opcode & 0xF
 				is_mla := ((opcode >> 21) & 1) == 1
 				s_bit := ((opcode >> 20) & 1) == 1
-				self.r[rd] = if is_mla {
-					self.r[rn] + self.r[rs] * self.r[rm]
+				self.state.r[rd] = if is_mla {
+					self.state.r[rn] + self.state.r[rs] * self.state.r[rm]
 				} else {
-					self.r[rs] * self.r[rm]
+					self.state.r[rs] * self.state.r[rm]
 				}
 				if s_bit {
-					self.cpsr.n = false
-					self.cpsr.z = false
-					if (self.r[rd] & 0x8000_0000) != 0 {
-						self.cpsr.n = true
+					self.state.cpsr.n = false
+					self.state.cpsr.z = false
+					if (self.state.r[rd] & 0x8000_0000) != 0 {
+						self.state.cpsr.n = true
 					}
-					if self.r[rd] == 0 {
-						self.cpsr.z = true
+					if self.state.r[rd] == 0 {
+						self.state.cpsr.z = true
 					}
 				}
 			} else if (opcode & 0xE00_0090) == 0x90 { // LDRSBH
@@ -489,30 +317,30 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				is_halfword := ((opcode >> 5) & 1) == 1
 				offset := match is_immediate {
 					true { u32(((opcode >> 4) & 0xF0) | (opcode & 0xF)) }
-					false { self.r[opcode & 0xF] }
+					false { self.state.r[opcode & 0xF] }
 				}
 				address := match u_bit {
-					0 { self.r[rn] - offset }
-					1 { self.r[rn] + offset }
+					0 { self.state.r[rn] - offset }
+					1 { self.state.r[rn] + offset }
 					else { panic('u_bit is not binary!') }
 				}
-				// println('R${rn}: ${self.r[rn].hex()}, Offset: ${offset.hex()}')
+				// println('R${rn}: ${self.state.r[rn].hex()}, Offset: ${offset.hex()}')
 				value := match is_preindex {
 					true {
 						if writeback {
-							self.r[rn] = address
+							self.state.r[rn] = address
 						}
 						self.memory.read16(address) // First add base + offset and then read
 					}
 					false {
-						result := self.memory.read16(self.r[rn]) // First read from base and then add offset
-						self.r[rn] = address
+						result := self.memory.read16(self.state.r[rn]) // First read from base and then add offset
+						self.state.r[rn] = address
 						result
 					}
 				}
 				mask := if is_halfword { u32(0xFFFF_0000) } else { u32(0xFFFF_FF00) }
 				check_bit := if is_halfword { u32(0x8000) } else { u32(0x80) }
-				self.r[rd] = if is_signed && (value & check_bit) != 0 {
+				self.state.r[rd] = if is_signed && (value & check_bit) != 0 {
 					mask | u32(value)
 				} else {
 					u32(value)
@@ -536,13 +364,13 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					}
 					false {
 						rm := opcode & 0xF
-						self.r[rm]
+						self.state.r[rm]
 					}
 				}
 
 				if p_bit {
 					mut current_psr_value := self.get_current_spsr().to_hex()
-					if c_mask && self.cpsr.mode != .user {
+					if c_mask && self.state.cpsr.mode != .user {
 						current_psr_value = (current_psr_value & 0xFFFF_FF00) | (value & 0xFF)
 					}
 					if f_mask {
@@ -550,25 +378,25 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					}
 					self.set_current_spsr(current_psr_value)
 				} else {
-					mut current_psr_value := self.cpsr.to_hex()
-					if c_mask && self.cpsr.mode != .user {
+					mut current_psr_value := self.state.cpsr.to_hex()
+					if c_mask && self.state.cpsr.mode != .user {
 						current_psr_value = (current_psr_value & 0xFFFF_FF00) | (value & 0xFF)
 					}
 					if f_mask {
 						current_psr_value = (current_psr_value & 0x0FFF_FFFF) | (value & 0xF000_0000)
 					}
-					self.cpsr.from_value(current_psr_value)
+					self.state.cpsr.from_value(current_psr_value)
 				}
 			} else if (opcode & 0x1BF_0FFF) == 0x010F_0000 { // MRS
 				p_bit := (opcode >> 22) & 1
 				value := match p_bit {
-					0 { self.cpsr.to_hex() }
+					0 { self.state.cpsr.to_hex() }
 					1 { self.get_current_spsr().to_hex() }
 					else { panic('p_bit is not binary!') }
 				}
 
 				rd := (opcode >> 12) & 0xF
-				self.r[rd] = value
+				self.state.r[rd] = value
 			} else {
 				data_processing_opcode := (opcode >> 21) & 0xF
 				rn := (opcode >> 16) & 0xF
@@ -577,53 +405,53 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				s_bit := ((opcode >> 20) & 1) == 1
 				result := match data_processing_opcode {
 					0 { // AND
-						self.r[rd] = self.r[rn] & operand_value
-						self.r[rd]
+						self.state.r[rd] = self.state.r[rn] & operand_value
+						self.state.r[rd]
 					}
 					1 { // EOR
-						self.r[rd] = self.r[rn] ^ operand_value
-						self.r[rd]
+						self.state.r[rd] = self.state.r[rn] ^ operand_value
+						self.state.r[rd]
 					}
 					3 { // RSB
-						self.r[rd] = operand_value - self.r[rn]
-						self.r[rd]
+						self.state.r[rd] = operand_value - self.state.r[rn]
+						self.state.r[rd]
 					}
 					4 { // ADD
-						self.r[rd] = self.r[rn] + operand_value
-						self.r[rd]
+						self.state.r[rd] = self.state.r[rn] + operand_value
+						self.state.r[rd]
 					}
 					5 { // ADC
-						self.r[rd] = self.r[rn] + c_part + operand_value
-						self.r[rd]
+						self.state.r[rd] = self.state.r[rn] + c_part + operand_value
+						self.state.r[rd]
 					}
 					6 { // SBC
-						self.r[rd] = self.r[rn] - operand_value + c_part - 1
-						self.r[rd]
+						self.state.r[rd] = self.state.r[rn] - operand_value + c_part - 1
+						self.state.r[rd]
 					}
 					7 { // RSC
-						self.r[rd] = operand_value - self.r[rn] + c_part - 1
-						self.r[rd]
+						self.state.r[rd] = operand_value - self.state.r[rn] + c_part - 1
+						self.state.r[rd]
 					}
 					0xA { // CMP
-						self.r[rn] - operand_value
+						self.state.r[rn] - operand_value
 					}
 					0xB { // CMN
-						self.r[rn] + operand_value
+						self.state.r[rn] + operand_value
 					}
 					0xC { // ORR
-						self.r[rd] = self.r[rn] | operand_value
-						self.r[rd]
+						self.state.r[rd] = self.state.r[rn] | operand_value
+						self.state.r[rd]
 					}
 					0xD { // MOV
-						self.r[rd] = operand_value
+						self.state.r[rd] = operand_value
 						operand_value
 					}
 					0xE { // BIC
-						self.r[rd] = self.r[rn] & ~operand_value
-						self.r[rd]
+						self.state.r[rd] = self.state.r[rn] & ~operand_value
+						self.state.r[rd]
 					}
 					0xF { // MVN
-						self.r[rd] = operand_value ^ 0xFFFF_FFFF
+						self.state.r[rd] = operand_value ^ 0xFFFF_FFFF
 						operand_value ^ 0xFFFF_FFFF
 					}
 					else {
@@ -632,11 +460,11 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 				}
 				if s_bit {
 					if rd == 15 {
-						self.cpsr = self.get_current_spsr()
+						self.state.cpsr = self.get_current_spsr()
 					} else {
-						self.cpsr.v = ((self.r[rn] ^ operand_value ^ result) & 0x8000_0000) != 0
-						self.cpsr.z = result == 0
-						self.cpsr.n = (result & 0x8000_0000) != 0
+						self.state.cpsr.v = ((self.state.r[rn] ^ operand_value ^ result) & 0x8000_0000) != 0
+						self.state.cpsr.z = result == 0
+						self.state.cpsr.n = (result & 0x8000_0000) != 0
 					}
 				}
 			}
@@ -654,9 +482,9 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					target_address |= 0xFC00_0000
 				}
 				if l_flag {
-					self.r[14] = self.r[15] + 4
+					self.state.r[14] = self.state.r[15] + 4
 				}
-				self.r[15] += target_address
+				self.state.r[15] += target_address
 			} else if (opcode & 0xE10_0000) == 0x810_0000 { // LDM
 				self.ldm_opcode(opcode)
 			} else if (opcode & 0xE10_0000) == 0x800_0000 { // STM
@@ -671,27 +499,24 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 /*
 Evaluate condition. Opcode should execute if the result is true
 */
+@[inline]
 fn (self ARM7TDMI) should_execute(condition OpcodeCondition) bool {
 	match true {
-		condition == .eq && !self.cpsr.z, condition == .ne && self.cpsr.z,
-		condition == .cs
-			&& !self.cpsr.c, condition == .cc && self.cpsr.c,
-		condition == .mi
-			&& !self.cpsr.n, condition == .pl && self.cpsr.n,
-		condition == .vs
-			&& !self.cpsr.v, condition == .vc && self.cpsr.v,
-		condition == .hi
-			&& !self.cpsr.c && self.cpsr.z,
-		condition == .ls && !(!self.cpsr.c
-			|| self.cpsr.z),
+		condition == .eq && !self.state.cpsr.z, condition == .ne && self.state.cpsr.z,
+		condition == .cs && !self.state.cpsr.c, condition == .cc && self.state.cpsr.c,
+		condition == .mi && !self.state.cpsr.n, condition == .pl && self.state.cpsr.n,
+		condition == .vs && !self.state.cpsr.v, condition == .vc && self.state.cpsr.v,
+		condition == .hi && !self.state.cpsr.c && self.state.cpsr.z,
+		condition == .ls
+			&& !(!self.state.cpsr.c || self.state.cpsr.z),
 		condition == .ge
-			&& self.cpsr.n != self.cpsr.v,
+			&& self.state.cpsr.n != self.state.cpsr.v,
 		condition == .lt
-			&& self.cpsr.n == self.cpsr.v,
-		condition == .gt && !(!self.cpsr.z
-			&& self.cpsr.n == self.cpsr.v),
-		condition == .le
-			&& !(self.cpsr.z || self.cpsr.n != self.cpsr.v) {
+			&& self.state.cpsr.n == self.state.cpsr.v,
+		condition == .gt
+			&& !(!self.state.cpsr.z && self.state.cpsr.n == self.state.cpsr.v),
+		condition == .le && !(self.state.cpsr.z
+			|| self.state.cpsr.n != self.state.cpsr.v) {
 			return false
 		}
 		else {
@@ -704,17 +529,17 @@ pub fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 	is_register_shift := ((opcode >> 25) & 1) == 0
 	s_bit := ((opcode >> 20) & 1) != 0
 	mut operand_value := u32(0)
-	mut c_bit := self.cpsr.c
+	mut c_bit := self.state.cpsr.c
 	if is_register_shift {
 		shift_type := ShiftType.from_u32((opcode >> 5) & 3) or { panic('') }
 		is_register_value := ((opcode >> 4) & 1) == 1
 		shift_value := if is_register_value {
-			self.r[(opcode >> 8) & 0xF]
+			self.state.r[(opcode >> 8) & 0xF]
 		} else {
 			(opcode >> 7) & 0x1F
 		}
 		rm := opcode & 0xF
-		mut result := self.r[rm]
+		mut result := self.state.r[rm]
 
 		operand_value = match shift_type {
 			.lsl {
@@ -773,7 +598,7 @@ pub fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 	}
 
 	if s_bit {
-		self.cpsr.c = c_bit
+		self.state.cpsr.c = c_bit
 	}
 	return operand_value
 }
@@ -787,17 +612,17 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 	// If u_flag is set then we increment, otherwise decrement
 	delta := if u_flag { u32(4) } else { u32(-4) }
 
-	mut offset := self.r[rn]
+	mut offset := self.state.r[rn]
 	if u_flag {
 		for i in 0 .. 16 {
 			if (opcode & (1 << i)) != 0 {
 				if p_flag {
 					offset += delta
 					value := self.memory.read32(offset)
-					self.r[i] = value
+					self.state.r[i] = value
 				} else {
 					value := self.memory.read32(offset)
-					self.r[i] = value
+					self.state.r[i] = value
 					offset += delta
 				}
 			}
@@ -808,17 +633,17 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 				if p_flag {
 					offset += delta
 					value := self.memory.read32(offset)
-					self.r[i] = value
+					self.state.r[i] = value
 				} else {
 					value := self.memory.read32(offset)
-					self.r[i] = value
+					self.state.r[i] = value
 					offset += delta
 				}
 			}
 		}
 	}
 	if w_flag {
-		self.r[rn] = offset
+		self.state.r[rn] = offset
 	}
 }
 
@@ -830,10 +655,10 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 	u_bit := (opcode & 0x80_0000) != 0
 	b_bit := (opcode & 0x40_0000) != 0
 	w_bit := (opcode & 0x20_0000) != 0
-	mut address := self.r[rn]
+	mut address := self.state.r[rn]
 	mut offset := u32(0)
 	if i_bit {
-		rm := self.r[opcode & 0xF]
+		rm := self.state.r[opcode & 0xF]
 		shift_value := (opcode >> 7) & 0x1F
 		shift_type := ShiftType.from_u32((opcode >> 5) & 3) or { panic('') }
 		real_offset := match shift_type {
@@ -872,21 +697,21 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 	}
 
 	if b_bit {
-		self.r[rd] = self.memory.read8(address)
+		self.state.r[rd] = self.memory.read8(address)
 	} else {
 		unalignment_shift := (address & 3) << 3
 		mut value := self.memory.read32(address & 0xFFFF_FFFC) // truncate to word aligned
 		value = rotate_left_32(value, -int(unalignment_shift))
-		self.r[rd] = value
+		self.state.r[rd] = value
 	}
 
 	if !p_bit {
 		// Post index. Writeback is always enabled
-		self.r[rn] = address + offset
+		self.state.r[rn] = address + offset
 	} else {
 		// Preindex. Writeback is optional
 		if w_bit {
-			self.r[rn] = address
+			self.state.r[rn] = address
 		}
 	}
 }
@@ -897,28 +722,28 @@ fn (mut self ARM7TDMI) stm_opcode(opcode u32) {
 	u_flag := (opcode & 0x80_0000) != 0
 	s_flag := (opcode & 0x40_0000) != 0
 	w_flag := (opcode & 0x20_0000) != 0
-	mut offset := self.r[rn]
+	mut offset := self.state.r[rn]
 	mut rn_offset := u32(0)
 	mut replace_rn_value := false
 
 	// Determine which mode's registers to use
 	// When s_flag is set, use user mode registers regardless of current mode
 	// When s_flag is not set, use current mode's banked registers
-	mode := if s_flag { CPUMode.user } else { self.cpsr.mode }
+	mode := if s_flag { CPUMode.user } else { self.state.cpsr.mode }
 
 	if u_flag {
 		for i in 0 .. 16 {
 			if (opcode & (1 << i)) != 0 {
-				if rn == i && offset != self.r[rn] {
+				if rn == i && offset != self.state.r[rn] {
 					rn_offset = offset
 					replace_rn_value = true
 				}
 				if p_flag {
 					offset += 4
-					reg_value := self.read_register(u32(i), mode)
+					reg_value := self.state.get_register(u32(i), mode)
 					self.memory.write32(offset, reg_value)
 				} else {
-					reg_value := self.read_register(u32(i), mode)
+					reg_value := self.state.get_register(u32(i), mode)
 					self.memory.write32(offset, reg_value)
 					offset += 4
 				}
@@ -927,7 +752,7 @@ fn (mut self ARM7TDMI) stm_opcode(opcode u32) {
 	} else {
 		for i := 15; i >= 0; i -= 1 {
 			if (opcode & (1 << i)) != 0 {
-				reg_value := self.read_register(u32(i), mode)
+				reg_value := self.state.get_register(u32(i), mode)
 				if p_flag {
 					offset -= 4
 					self.memory.write32(offset, reg_value)
@@ -939,9 +764,9 @@ fn (mut self ARM7TDMI) stm_opcode(opcode u32) {
 		}
 	}
 	if w_flag {
-		self.r[rn] = offset
+		self.state.r[rn] = offset
 		if replace_rn_value {
-			self.memory.write32(rn_offset, self.r[rn])
+			self.memory.write32(rn_offset, self.state.r[rn])
 		}
 	}
 }
