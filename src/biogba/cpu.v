@@ -65,7 +65,15 @@ pub fn (mut psr PSR) from_value(value u32) {
 pub struct CPUState {
 pub mut:
 	r               [16]u32
-	r_fiq			[16]u32
+	r_fiq           [7]u32 // FIQ banked registers R8-R14 (indexed 0-6)
+	r13_irq         u32
+	r14_irq         u32
+	r13_supervisor  u32
+	r14_supervisor  u32
+	r13_abort       u32
+	r14_abort       u32
+	r13_undefined   u32
+	r14_undefined   u32
 	cpsr            PSR
 	spsr_fiq        PSR
 	spsr_irq        PSR
@@ -75,10 +83,135 @@ pub mut:
 	spsr_system     PSR
 }
 
+// Set a register value for a specific CPU mode
+// Handles banked registers correctly based on mode
+pub fn (mut state CPUState) set_register(reg_num u32, mode CPUMode, value u32) {
+	match mode {
+		.fiq {
+			// FIQ mode: R8-R14 are banked (stored in r_fiq[0-6])
+			if reg_num >= 8 && reg_num <= 14 {
+				state.r_fiq[reg_num - 8] = value
+			} else {
+				state.r[reg_num] = value
+			}
+		}
+		.irq {
+			// IRQ mode: R13-R14 are banked
+			if reg_num == 13 {
+				state.r13_irq = value
+			} else if reg_num == 14 {
+				state.r14_irq = value
+			} else {
+				state.r[reg_num] = value
+			}
+		}
+		.supervisor {
+			// Supervisor mode: R13-R14 are banked
+			if reg_num == 13 {
+				state.r13_supervisor = value
+			} else if reg_num == 14 {
+				state.r14_supervisor = value
+			} else {
+				state.r[reg_num] = value
+			}
+		}
+		.abort {
+			// Abort mode: R13-R14 are banked
+			if reg_num == 13 {
+				state.r13_abort = value
+			} else if reg_num == 14 {
+				state.r14_abort = value
+			} else {
+				state.r[reg_num] = value
+			}
+		}
+		.undefined {
+			// Undefined mode: R13-R14 are banked
+			if reg_num == 13 {
+				state.r13_undefined = value
+			} else if reg_num == 14 {
+				state.r14_undefined = value
+			} else {
+				state.r[reg_num] = value
+			}
+		}
+		.user, .system {
+			// User and System modes share the same register bank
+			state.r[reg_num] = value
+		}
+	}
+}
+
+// Get a register value for a specific CPU mode
+// Handles banked registers correctly based on mode
+pub fn (state CPUState) get_register(reg_num u32, mode CPUMode) u32 {
+	match mode {
+		.fiq {
+			// FIQ mode: R8-R14 are banked (stored in r_fiq[0-6])
+			if reg_num >= 8 && reg_num <= 14 {
+				return state.r_fiq[reg_num - 8]
+			}
+			return state.r[reg_num]
+		}
+		.irq {
+			// IRQ mode: R13-R14 are banked
+			if reg_num == 13 {
+				return state.r13_irq
+			}
+			if reg_num == 14 {
+				return state.r14_irq
+			}
+			return state.r[reg_num]
+		}
+		.supervisor {
+			// Supervisor mode: R13-R14 are banked
+			if reg_num == 13 {
+				return state.r13_supervisor
+			}
+			if reg_num == 14 {
+				return state.r14_supervisor
+			}
+			return state.r[reg_num]
+		}
+		.abort {
+			// Abort mode: R13-R14 are banked
+			if reg_num == 13 {
+				return state.r13_abort
+			}
+			if reg_num == 14 {
+				return state.r14_abort
+			}
+			return state.r[reg_num]
+		}
+		.undefined {
+			// Undefined mode: R13-R14 are banked
+			if reg_num == 13 {
+				return state.r13_undefined
+			}
+			if reg_num == 14 {
+				return state.r14_undefined
+			}
+			return state.r[reg_num]
+		}
+		.user, .system {
+			// User and System modes share the same register bank
+			return state.r[reg_num]
+		}
+	}
+}
+
 pub struct ARM7TDMI {
 mut:
 	r               [16]u32
-	r_fiq			[16]u32
+	r_fiq           [7]u32 // FIQ banked registers R8-R14 (indexed 0-6)
+	r13_irq         u32
+	r14_irq         u32
+	r13_supervisor  u32
+	r14_supervisor  u32
+	r13_abort       u32
+	r14_abort       u32
+	r13_undefined   u32
+	r14_undefined   u32
 	cpsr            PSR
 	spsr_fiq        PSR
 	spsr_irq        PSR
@@ -97,6 +230,14 @@ pub fn (mut self ARM7TDMI) set_state(state CPUState) {
 	for i, _ in self.r_fiq {
 		self.r_fiq[i] = state.r_fiq[i]
 	}
+	self.r13_irq = state.r13_irq
+	self.r14_irq = state.r14_irq
+	self.r13_supervisor = state.r13_supervisor
+	self.r14_supervisor = state.r14_supervisor
+	self.r13_abort = state.r13_abort
+	self.r14_abort = state.r14_abort
+	self.r13_undefined = state.r13_undefined
+	self.r14_undefined = state.r14_undefined
 	self.cpsr = state.cpsr
 	self.spsr_fiq = state.spsr_fiq
 	self.spsr_irq = state.spsr_irq
@@ -114,6 +255,14 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 	for i, reg in self.r_fiq {
 		result.r_fiq[i] = reg
 	}
+	result.r13_irq = self.r13_irq
+	result.r14_irq = self.r14_irq
+	result.r13_supervisor = self.r13_supervisor
+	result.r14_supervisor = self.r14_supervisor
+	result.r13_abort = self.r13_abort
+	result.r14_abort = self.r14_abort
+	result.r13_undefined = self.r13_undefined
+	result.r14_undefined = self.r14_undefined
 	result.cpsr = self.cpsr
 	result.spsr_fiq = self.spsr_fiq
 	result.spsr_irq = self.spsr_irq
@@ -145,6 +294,123 @@ pub fn (mut self ARM7TDMI) set_current_spsr(value u32) {
 		.undefined { self.spsr_undefined.from_value(value) }
 		.system { self.spsr_system.from_value(value) }
 		else { panic('Writing to an unkown PSR') }
+	}
+}
+
+// Read a register value for a specific CPU mode
+// Handles banked registers correctly based on mode
+pub fn (self ARM7TDMI) read_register(reg_num u32, mode CPUMode) u32 {
+	match mode {
+		.fiq {
+			// FIQ mode: R8-R14 are banked (stored in r_fiq[0-6])
+			if reg_num >= 8 && reg_num <= 14 {
+				return self.r_fiq[reg_num - 8]
+			}
+			return self.r[reg_num]
+		}
+		.irq {
+			// IRQ mode: R13-R14 are banked
+			if reg_num == 13 {
+				return self.r13_irq
+			}
+			if reg_num == 14 {
+				return self.r14_irq
+			}
+			return self.r[reg_num]
+		}
+		.supervisor {
+			// Supervisor mode: R13-R14 are banked
+			if reg_num == 13 {
+				return self.r13_supervisor
+			}
+			if reg_num == 14 {
+				return self.r14_supervisor
+			}
+			return self.r[reg_num]
+		}
+		.abort {
+			// Abort mode: R13-R14 are banked
+			if reg_num == 13 {
+				return self.r13_abort
+			}
+			if reg_num == 14 {
+				return self.r14_abort
+			}
+			return self.r[reg_num]
+		}
+		.undefined {
+			// Undefined mode: R13-R14 are banked
+			if reg_num == 13 {
+				return self.r13_undefined
+			}
+			if reg_num == 14 {
+				return self.r14_undefined
+			}
+			return self.r[reg_num]
+		}
+		.user, .system {
+			// User and System modes share the same register bank
+			return self.r[reg_num]
+		}
+	}
+}
+
+// Write a value to a register for a specific CPU mode
+// Handles banked registers correctly based on mode
+pub fn (mut self ARM7TDMI) write_register(reg_num u32, mode CPUMode, value u32) {
+	match mode {
+		.fiq {
+			// FIQ mode: R8-R14 are banked (stored in r_fiq[0-6])
+			if reg_num >= 8 && reg_num <= 14 {
+				self.r_fiq[reg_num - 8] = value
+			} else {
+				self.r[reg_num] = value
+			}
+		}
+		.irq {
+			// IRQ mode: R13-R14 are banked
+			if reg_num == 13 {
+				self.r13_irq = value
+			} else if reg_num == 14 {
+				self.r14_irq = value
+			} else {
+				self.r[reg_num] = value
+			}
+		}
+		.supervisor {
+			// Supervisor mode: R13-R14 are banked
+			if reg_num == 13 {
+				self.r13_supervisor = value
+			} else if reg_num == 14 {
+				self.r14_supervisor = value
+			} else {
+				self.r[reg_num] = value
+			}
+		}
+		.abort {
+			// Abort mode: R13-R14 are banked
+			if reg_num == 13 {
+				self.r13_abort = value
+			} else if reg_num == 14 {
+				self.r14_abort = value
+			} else {
+				self.r[reg_num] = value
+			}
+		}
+		.undefined {
+			// Undefined mode: R13-R14 are banked
+			if reg_num == 13 {
+				self.r13_undefined = value
+			} else if reg_num == 14 {
+				self.r14_undefined = value
+			} else {
+				self.r[reg_num] = value
+			}
+		}
+		.user, .system {
+			// User and System modes share the same register bank
+			self.r[reg_num] = value
+		}
 	}
 }
 
@@ -394,56 +660,7 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 			} else if (opcode & 0xE10_0000) == 0x810_0000 { // LDM
 				self.ldm_opcode(opcode)
 			} else if (opcode & 0xE10_0000) == 0x800_0000 { // STM
-				rn := (opcode >> 16) & 0xF
-				p_flag := (opcode & 0x100_0000) != 0
-				u_flag := (opcode & 0x80_0000) != 0
-				s_flag := (opcode & 0x40_0000) != 0
-				w_flag := (opcode & 0x20_0000) != 0
-				mut offset := self.r[rn]
-				mut rn_offset := u32(0)
-				mut replace_rn_value := false
-				// println('Offset ${offset}')
-				if u_flag {
-					for i in 0 .. 16 {
-						if (opcode & (1 << i)) != 0 {
-							// println('Writing register R${i} with value ${self.r[i]} at ${offset}')
-							// println('Rn = ${rn} and i=${i}. Offset=${offset} Rn value=${self.r[rn]}')
-							if rn == i && offset != self.r[rn] {
-								rn_offset = offset
-								replace_rn_value = true
-							}
-							if p_flag {
-								offset += 4
-								self.memory.write32(offset, self.r[i])
-							} else {
-								if self.cpsr.mode != .user && !s_flag {
-									self.memory.write32(offset, self.r_fiq[i])
-								} else {
-									self.memory.write32(offset, self.r[i])
-								}
-								offset += 4
-							}
-						}
-					}
-				} else {
-					for i := 15; i >= 0; i -= 1 {
-						if (opcode & (1 << i)) != 0 {
-							if p_flag {
-								offset -= 4
-								self.memory.write32(offset, self.r[i])
-							} else {
-								self.memory.write32(offset, self.r[i])
-								offset -= 4
-							}
-						}
-					}
-				}
-				if w_flag {
-					self.r[rn] = offset
-					if replace_rn_value {
-						self.memory.write32(rn_offset, self.r[rn])
-					}
-				}
+				self.stm_opcode(opcode)
 			}
 		}
 		3 {}
@@ -670,6 +887,61 @@ fn (mut self ARM7TDMI) ldr_opcode(opcode u32) {
 		// Preindex. Writeback is optional
 		if w_bit {
 			self.r[rn] = address
+		}
+	}
+}
+
+fn (mut self ARM7TDMI) stm_opcode(opcode u32) {
+	rn := (opcode >> 16) & 0xF
+	p_flag := (opcode & 0x100_0000) != 0
+	u_flag := (opcode & 0x80_0000) != 0
+	s_flag := (opcode & 0x40_0000) != 0
+	w_flag := (opcode & 0x20_0000) != 0
+	mut offset := self.r[rn]
+	mut rn_offset := u32(0)
+	mut replace_rn_value := false
+
+	// Determine which mode's registers to use
+	// When s_flag is set, use user mode registers regardless of current mode
+	// When s_flag is not set, use current mode's banked registers
+	mode := if s_flag { CPUMode.user } else { self.cpsr.mode }
+
+	if u_flag {
+		for i in 0 .. 16 {
+			if (opcode & (1 << i)) != 0 {
+				if rn == i && offset != self.r[rn] {
+					rn_offset = offset
+					replace_rn_value = true
+				}
+				if p_flag {
+					offset += 4
+					reg_value := self.read_register(u32(i), mode)
+					self.memory.write32(offset, reg_value)
+				} else {
+					reg_value := self.read_register(u32(i), mode)
+					self.memory.write32(offset, reg_value)
+					offset += 4
+				}
+			}
+		}
+	} else {
+		for i := 15; i >= 0; i -= 1 {
+			if (opcode & (1 << i)) != 0 {
+				reg_value := self.read_register(u32(i), mode)
+				if p_flag {
+					offset -= 4
+					self.memory.write32(offset, reg_value)
+				} else {
+					self.memory.write32(offset, reg_value)
+					offset -= 4
+				}
+			}
+		}
+	}
+	if w_flag {
+		self.r[rn] = offset
+		if replace_rn_value {
+			self.memory.write32(rn_offset, self.r[rn])
 		}
 	}
 }

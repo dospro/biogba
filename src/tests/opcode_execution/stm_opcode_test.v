@@ -322,8 +322,8 @@ fn test_stm_s_bit_stores_user_bank() {
 	mut memory := mocks.MemoryFake{}
 	memory.set_values32(0, [u32(0)])
 	mut cpu_state := CPUState{}
-	cpu_state.r_fiq[8] = 0x1111_2222
-	cpu_state.r_fiq[10] = 0x2222_3333
+	cpu_state.set_register(8, biogba.CPUMode.fiq, 0x1111_2222)
+	cpu_state.set_register(10, biogba.CPUMode.fiq, 0x2222_3333)
 	cpu_state.r[0] = 0x0 // Rn
 	cpu_state.r[8] = 0x4444_5555
 	cpu_state.r[10] = 0x6666_7777
@@ -356,8 +356,8 @@ fn test_stm_stores_fiq_bank() {
 	mut memory := mocks.MemoryFake{}
 	memory.set_values32(0, [u32(0)])
 	mut cpu_state := CPUState{}
-	cpu_state.r_fiq[8] = 0x1111_2222
-	cpu_state.r_fiq[10] = 0x2222_3333
+	cpu_state.set_register(8, biogba.CPUMode.fiq, 0x1111_2222)
+	cpu_state.set_register(10, biogba.CPUMode.fiq, 0x2222_3333)
 	cpu_state.r[0] = 0x0 // Rn
 	cpu_state.r[8] = 0x4444_5555
 	cpu_state.r[10] = 0x6666_7777
@@ -378,6 +378,68 @@ fn test_stm_stores_fiq_bank() {
 	result := cpu.get_state()
 	assert memory.read32(0) == 0x1111_2222
 	assert memory.read32(4) == 0x2222_3333
+}
+
+/*
+Test STM Opcode when S bit is set in user mode
+In user mode, there are no banked registers, so S bit should be ignored
+resulting in user mode registers being stored.
+*/
+fn test_stm_s_bit_is_ignored() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0, [u32(0)])
+	mut cpu_state := CPUState{}
+	cpu_state.set_register(8, biogba.CPUMode.fiq, 0x1111_2222)
+	cpu_state.set_register(10, biogba.CPUMode.fiq, 0x2222_3333)
+	cpu_state.r[0] = 0x0 // Rn
+	cpu_state.r[8] = 0x4444_5555
+	cpu_state.r[10] = 0x6666_7777
+	cpu_state.cpsr.mode = biogba.CPUMode.user
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.STMOpcode{
+		rn: 0
+		w_bit: false
+		s_bit: true
+		register_list: [.r8, .r10]
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert memory.read32(0) == 0x4444_5555
+	assert memory.read32(4) == 0x6666_7777
+}
+
+/*
+Test STM Opcode when S bit is unset in supervisor mode
+In supervisor mode, when S bit is unset, the banked registers are stored.
+*/
+fn test_stm_s_bit_in_supervisor_mode() {
+	mut memory := mocks.MemoryFake{}
+	memory.set_values32(0, [u32(0)])
+	mut cpu_state := CPUState{}
+	cpu_state.r14_supervisor = 0x1111_2222
+	cpu_state.r[0] = 0x0 // Rn
+	cpu_state.r[14] = 0x4444_5555
+	cpu_state.cpsr.mode = biogba.CPUMode.supervisor
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.STMOpcode{
+		rn: 0
+		w_bit: false
+		s_bit: false
+		register_list: [.r14]
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+	assert memory.read32(0) == 0x1111_2222
 }
 
 /*
