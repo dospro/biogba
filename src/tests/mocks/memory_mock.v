@@ -45,3 +45,10 @@ pub fn (self MemoryFake) read16(offset u32) u16 {
 pub fn (self MemoryFake) read32(offset u32) u32 {
 	return little_endian_u32_at(self.memory, int(offset))
 }
+
+pub fn (mut self MemoryFake) write32(offset u32, value u32) {
+	self.memory[offset] = u8(value & 0xFF)
+	self.memory[offset + 1] = u8((value >> 8) & 0xFF)
+	self.memory[offset + 2] = u8((value >> 16) & 0xFF)
+	self.memory[offset + 3] = u8((value >> 24) & 0xFF)
+}

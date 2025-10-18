@@ -65,6 +65,7 @@ pub fn (mut psr PSR) from_value(value u32) {
 pub struct CPUState {
 pub mut:
 	r               [16]u32
+	r_fiq			[16]u32
 	cpsr            PSR
 	spsr_fiq        PSR
 	spsr_irq        PSR
@@ -77,6 +78,7 @@ pub mut:
 pub struct ARM7TDMI {
 mut:
 	r               [16]u32
+	r_fiq			[16]u32
 	cpsr            PSR
 	spsr_fiq        PSR
 	spsr_irq        PSR
@@ -92,6 +94,9 @@ pub fn (mut self ARM7TDMI) set_state(state CPUState) {
 	for i, _ in self.r {
 		self.r[i] = state.r[i]
 	}
+	for i, _ in self.r_fiq {
+		self.r_fiq[i] = state.r_fiq[i]
+	}
 	self.cpsr = state.cpsr
 	self.spsr_fiq = state.spsr_fiq
 	self.spsr_irq = state.spsr_irq
@@ -105,6 +110,9 @@ pub fn (self ARM7TDMI) get_state() CPUState {
 	mut result := CPUState{}
 	for i, reg in self.r {
 		result.r[i] = reg
+	}
+	for i, reg in self.r_fiq {
+		result.r_fiq[i] = reg
 	}
 	result.cpsr = self.cpsr
 	result.spsr_fiq = self.spsr_fiq
@@ -383,8 +391,59 @@ pub fn (mut self ARM7TDMI) execute_opcode(opcode u32) {
 					self.r[14] = self.r[15] + 4
 				}
 				self.r[15] += target_address
-			} else { // LDM
+			} else if (opcode & 0xE10_0000) == 0x810_0000 { // LDM
 				self.ldm_opcode(opcode)
+			} else if (opcode & 0xE10_0000) == 0x800_0000 { // STM
+				rn := (opcode >> 16) & 0xF
+				p_flag := (opcode & 0x100_0000) != 0
+				u_flag := (opcode & 0x80_0000) != 0
+				s_flag := (opcode & 0x40_0000) != 0
+				w_flag := (opcode & 0x20_0000) != 0
+				mut offset := self.r[rn]
+				mut rn_offset := u32(0)
+				mut replace_rn_value := false
+				// println('Offset ${offset}')
+				if u_flag {
+					for i in 0 .. 16 {
+						if (opcode & (1 << i)) != 0 {
+							// println('Writing register R${i} with value ${self.r[i]} at ${offset}')
+							// println('Rn = ${rn} and i=${i}. Offset=${offset} Rn value=${self.r[rn]}')
+							if rn == i && offset != self.r[rn] {
+								rn_offset = offset
+								replace_rn_value = true
+							}
+							if p_flag {
+								offset += 4
+								self.memory.write32(offset, self.r[i])
+							} else {
+								if self.cpsr.mode != .user && !s_flag {
+									self.memory.write32(offset, self.r_fiq[i])
+								} else {
+									self.memory.write32(offset, self.r[i])
+								}
+								offset += 4
+							}
+						}
+					}
+				} else {
+					for i := 15; i >= 0; i -= 1 {
+						if (opcode & (1 << i)) != 0 {
+							if p_flag {
+								offset -= 4
+								self.memory.write32(offset, self.r[i])
+							} else {
+								self.memory.write32(offset, self.r[i])
+								offset -= 4
+							}
+						}
+					}
+				}
+				if w_flag {
+					self.r[rn] = offset
+					if replace_rn_value {
+						self.memory.write32(rn_offset, self.r[rn])
+					}
+				}
 			}
 		}
 		3 {}

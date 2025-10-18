@@ -413,3 +413,29 @@ pub fn (opcode MULLOpcode) as_hex() u32 {
 	rm_part := u32(opcode.rm) & 0xF
 	return condition_part | u_part | a_part | s_part | rdhi_part | rdlo_part | rs_part | rm_part | opcode_part
 }
+
+pub struct STMOpcode {
+pub:
+	condition     OpcodeCondition = OpcodeCondition.al
+	rn            u8
+	p_bit         bool
+	u_bit         bool = true
+	w_bit         bool
+	s_bit         bool
+	register_list []Register
+}
+
+pub fn (opcode STMOpcode) as_hex() u32 {
+	opcode_part := u32(0x800_0000)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	rn_part := u32(opcode.rn) << 16
+	p_part := if opcode.p_bit { u32(0x100_0000) } else { u32(0) }
+	u_part := if opcode.u_bit { u32(0x80_0000) } else { u32(0) }
+	s_part := if opcode.s_bit { u32(0x40_0000) } else { u32(0) }
+	w_part := if opcode.w_bit { u32(0x20_0000) } else { u32(0) }
+	mut register_list_part := u32(0)
+	for elem in opcode.register_list {
+		register_list_part |= (1 << u32(elem))
+	}
+	return condition_part | rn_part | p_part | s_part | u_part | w_part | register_list_part | opcode_part
+}
