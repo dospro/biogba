@@ -170,6 +170,7 @@ pub:
 	rn            u8
 	p_bit         bool
 	u_bit         bool
+	s_bit         bool
 	w_bit         bool
 	register_list []Register
 }
@@ -180,12 +181,13 @@ pub fn (opcode LDMOpcode) as_hex() u32 {
 	rn_part := u32(opcode.rn) << 16
 	p_part := if opcode.p_bit { u32(0x100_0000) } else { u32(0) }
 	u_part := if opcode.u_bit { u32(0x80_0000) } else { u32(0) }
+	s_part := if opcode.s_bit { u32(0x40_0000) } else { u32(0) }
 	w_part := if opcode.w_bit { u32(0x20_0000) } else { u32(0) }
 	mut register_list_part := u32(0)
 	for elem in opcode.register_list {
 		register_list_part |= (1 << u32(elem))
 	}
-	return condition_part | p_part | u_part | w_part | rn_part | opcode_part | register_list_part
+	return condition_part | p_part | u_part | s_part | w_part | rn_part | opcode_part | register_list_part
 }
 
 pub struct RegisterOffset {

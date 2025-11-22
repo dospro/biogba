@@ -29,3 +29,17 @@ fn test_ldm() {
 	hex_value := opcode.as_hex()
 	assert hex_value == 0x09BE_800D
 }
+
+fn test_ldm_with_s_bit() {
+	opcode := LDMOpcode{
+		condition: OpcodeCondition.ne
+		rn: 5
+		p_bit: true
+		u_bit: false
+		w_bit: false
+		s_bit: true
+		register_list: [.r4, .r6, .r8]
+	}
+	hex_value := opcode.as_hex()
+	assert hex_value == 0x19550150
+}

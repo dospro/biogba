@@ -23,10 +23,10 @@ fn test_ldm_single_register() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDMOpcode{
-		rn: 1
-		p_bit: false
-		u_bit: true
-		w_bit: false
+		rn:            1
+		p_bit:         false
+		u_bit:         true
+		w_bit:         false
 		register_list: [.r0]
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -62,10 +62,10 @@ fn test_ldm_multiple_register() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDMOpcode{
-		rn: 1
-		p_bit: false
-		u_bit: true
-		w_bit: false
+		rn:            1
+		p_bit:         false
+		u_bit:         true
+		w_bit:         false
 		register_list: [.r0, .r2, .r4, .r6, .r8, .r10, .r12, .r14]
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -100,7 +100,7 @@ fn test_ldm_decrement() {
 		0x2222_2222, // Offset 0x0FF8
 		0x3333_3333, // Offset 0x0FFC
 		0x4444_4444, // Offset 0x1000
-		0x5555_5555
+		0x5555_5555,
 	]
 	memory.set_values32(0xFF4, values)
 	mut cpu_state := CPUState{}
@@ -112,10 +112,10 @@ fn test_ldm_decrement() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDMOpcode{
-		rn: 4
-		p_bit: false
-		u_bit: false
-		w_bit: false
+		rn:            4
+		p_bit:         false
+		u_bit:         false
+		w_bit:         false
 		register_list: [.r1, .r5, .r7]
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -125,7 +125,6 @@ fn test_ldm_decrement() {
 	assert result.r[1] == 0x2222_2222
 	assert result.r[5] == 0x3333_3333
 	assert result.r[7] == 0x4444_4444
-	
 }
 
 /*
@@ -151,10 +150,10 @@ fn test_ldm_preindex() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDMOpcode{
-		rn: 4
-		p_bit: true
-		u_bit: true
-		w_bit: false
+		rn:            4
+		p_bit:         true
+		u_bit:         true
+		w_bit:         false
 		register_list: [.r0, .r1, .r2]
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -200,10 +199,10 @@ fn test_ldm_preindex_decrement_writeback() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDMOpcode{
-		rn: 4
-		p_bit: true
-		u_bit: false
-		w_bit: true
+		rn:            4
+		p_bit:         true
+		u_bit:         false
+		w_bit:         true
 		register_list: [.r1, .r3, .r5]
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -238,7 +237,7 @@ fn test_ldm_preindex_inc_writeback() {
 		u32(0x1111_1111),
 		0x2222_2222,
 		0x3333_3333,
-		0x4444_4444
+		0x4444_4444,
 	]
 	memory.set_values32(0x1000, values)
 	mut cpu_state := CPUState{}
@@ -250,10 +249,10 @@ fn test_ldm_preindex_inc_writeback() {
 	cpu.set_state(cpu_state)
 
 	opcode := biogba.LDMOpcode{
-		rn: 4
-		p_bit: true
-		u_bit: true
-		w_bit: true
+		rn:            4
+		p_bit:         true
+		u_bit:         true
+		w_bit:         true
 		register_list: [.r3, .r1, .r5]
 	}
 	cpu.execute_opcode(opcode.as_hex())
@@ -263,4 +262,112 @@ fn test_ldm_preindex_inc_writeback() {
 	assert result.r[1] == 0x2222_2222
 	assert result.r[3] == 0x3333_3333
 	assert result.r[5] == 0x4444_4444
+}
+
+/*
+Test LDM using non user mode without S bit set
+
+In this case we verify that when using LDM in a non-user mode without S bit set,
+the banked registers are used for loading instead of the user mode registers.
+Configuration:
+- FIQ mode
+- No S bit
+- Post increment
+*/
+fn test_ldm_non_user_mode_no_s_bit() {
+	mut memory := mocks.MemoryFake{}
+	values := [
+		u32(0x1111_1111), // R8_fiq
+		0x2222_2222, // R9_fiq
+		0x3333_3333, // R10_fiq
+	]
+	memory.set_values32(0x1000, values)
+	mut cpu_state := CPUState{}
+	cpu_state.r[4] = 0x1000 // Base address
+	cpu_state.cpsr.mode = biogba.CPUMode.fiq
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDMOpcode{
+		rn:            4
+		p_bit:         false
+		u_bit:         true
+		w_bit:         false
+		register_list: [.r8, .r9, .r10]
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	// Verify banked registers were loaded
+	assert result.get_register(8, .fiq) == 0x1111_1111
+	assert result.get_register(9, .fiq) == 0x2222_2222
+	assert result.get_register(10, .fiq) == 0x3333_3333
+}
+
+/*
+Test LDM with R15 in transfer list and S bit set
+
+ARM spec: "If the instruction is a LDM then SPSR_<mode> is transferred to CPSR
+at the same time as R15 is loaded"
+
+This test verifies that when LDM has S bit set and R15 is in the register list,
+the SPSR of the current mode is copied to CPSR when R15 is loaded.
+
+Configuration:
+- IRQ mode with specific SPSR_irq values
+- S bit set
+- R15 in register list
+- Post increment mode
+*/
+fn test_ldm_r15_with_s_bit_transfers_spsr_to_cpsr() {
+	mut memory := mocks.MemoryFake{}
+	values := [
+		u32(0x1111_1111), // R3
+		0x2222_2222, // R5
+		0x8000, // R15 (PC)
+	]
+	memory.set_values32(0x1000, values)
+	mut cpu_state := CPUState{}
+	cpu_state.r[4] = 0x1000 // Base address
+	cpu_state.cpsr.mode = biogba.CPUMode.irq
+
+	// Set SPSR_irq with specific values that differ from CPSR
+	spsr := biogba.PSR{
+		mode: biogba.CPUMode.supervisor
+		i:    true
+		f:    false
+		t:    false
+		c:    true
+		v:    true
+		z:    true
+		n:    true
+	}
+	cpu_state.spsr_irq = spsr
+
+	mut cpu := ARM7TDMI{
+		memory: memory
+	}
+	cpu.set_state(cpu_state)
+
+	opcode := biogba.LDMOpcode{
+		rn:            4
+		p_bit:         false
+		u_bit:         true
+		w_bit:         false
+		s_bit:         true
+		register_list: [.r3, .r5, .r15]
+	}
+	cpu.execute_opcode(opcode.as_hex())
+	result := cpu.get_state()
+
+	// Verify registers were loaded correctly
+	assert result.r[3] == 0x1111_1111
+	assert result.r[5] == 0x2222_2222
+	assert result.r[15] == 0x8000
+
+	// Verify SPSR_irq was transferred to CPSR when R15 was loaded
+	assert result.cpsr == spsr
 }

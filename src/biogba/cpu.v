@@ -607,6 +607,7 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 	rn := (opcode >> 16) & 0xF
 	p_flag := (opcode & 0x100_0000) != 0
 	u_flag := (opcode & 0x80_0000) != 0
+	s_flag := (opcode & 0x40_0000) != 0
 	w_flag := (opcode & 0x20_0000) != 0
 
 	mut address := self.state.r[rn]
@@ -614,8 +615,8 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 
 	// Single loop that handles both increment and decrement modes
 	// For increment: iterate 0->15, for decrement: iterate 15->0
-	for loop_idx in 0 .. 16 {
-		reg_idx := if u_flag { loop_idx } else { 15 - loop_idx }
+	for i in 0 .. 16 {
+		reg_idx := if u_flag { u32(i) } else { u32(15 - i) }
 
 		if (opcode & (1 << reg_idx)) != 0 {
 			// Apply offset before loading if pre-indexed (p_flag set)
@@ -625,7 +626,7 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 
 			// Load value from memory into register
 			value := self.memory.read32(address)
-			self.state.r[reg_idx] = value
+			self.state.set_register(reg_idx, if s_flag { .user } else { self.state.cpsr.mode }, value)
 
 			// Apply offset after loading if post-indexed (p_flag not set)
 			if !p_flag {
@@ -638,6 +639,11 @@ fn (mut self ARM7TDMI) ldm_opcode(opcode u32) {
 	// ARM spec: "A LDM will always overwrite the updated base if the base is in the list"
 	if w_flag {
 		self.state.r[rn] = address
+	}
+
+	if s_flag && (opcode & (1 << 15)) != 0 {
+		// If S bit is set and R15 is in the list, load CPSR from SPSR
+		self.state.cpsr = self.get_current_spsr()
 	}
 }
 
