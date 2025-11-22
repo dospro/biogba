@@ -454,7 +454,7 @@ fn test_stm_s_bit_is_ignored() {
 Test STM Opcode when S bit is unset in supervisor mode
 In supervisor mode, when S bit is unset, the banked registers are stored.
 */
-fn test_stm_s_bit_in_supervisor_mode() {
+fn test_stm_without_s_bit_in_supervisor_mode() {
 	mut memory := mocks.MemoryFake{}
 	memory.set_values32(0, [u32(0)])
 	mut cpu_state := CPUState{}

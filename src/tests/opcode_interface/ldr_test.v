@@ -16,7 +16,7 @@ fn test_ldr_immediate_simple() {
 		address: u16(0x123)
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0xE40F_5123
+	assert hex_value == 0xE41F_5123
 }
 
 fn test_ldr_immediate_flags() {
@@ -30,7 +30,7 @@ fn test_ldr_immediate_flags() {
 		address: u16(0x321)
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0x1521_2321
+	assert hex_value == 0x1531_2321
 }
 
 fn test_ldr_register_address_lsl() {
@@ -48,7 +48,7 @@ fn test_ldr_register_address_lsl() {
 		}
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0x1721_2883
+	assert hex_value == 0x1731_2883
 }
 
 fn test_ldr_register_address_lsr() {
@@ -66,7 +66,7 @@ fn test_ldr_register_address_lsr() {
 		}
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0x1721_28A3
+	assert hex_value == 0x1731_28A3
 }
 
 fn test_ldr_byte() {
@@ -81,5 +81,5 @@ fn test_ldr_byte() {
 		address: u16(0x11)
 	}
 	hex_value := opcode.as_hex()
-	assert hex_value == 0x15C1_2011
+	assert hex_value == 0x15D1_2011
 }

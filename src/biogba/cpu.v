@@ -12,7 +12,7 @@ pub enum CPUMode {
 	system     = 0b11111
 }
 
-// Processor Satus Register
+// Processor Status Register
 pub struct PSR {
 pub mut:
 	c bool // carry/overflow flag
@@ -238,7 +238,7 @@ pub fn (mut self ARM7TDMI) set_current_spsr(value u32) {
 		.abort { self.state.spsr_abort.from_value(value) }
 		.undefined { self.state.spsr_undefined.from_value(value) }
 		.system { self.state.spsr_system.from_value(value) }
-		else { panic('Writing to an unkown PSR') }
+		else { panic('Writing to an unknown PSR') }
 	}
 }
 
@@ -548,6 +548,12 @@ pub fn (mut self ARM7TDMI) get_shift_operand_value(opcode u32) u32 {
 					result <<= 1
 				}
 				result
+
+				// Possible optimization. Need to review for values > 32
+				// if shift_value != 0 {
+				// 	c_bit = (result >> (32 - shift_value)) & 1 != 0
+				// }
+				// result << shift_value
 			}
 			.lsr {
 				final_shift_value := if shift_value == 0 { 32 } else { shift_value }

@@ -212,11 +212,11 @@ pub:
 	u_bit     bool
 	b_bit     bool
 	w_bit     bool
-	address   Offset
+	address   Offset = u16(0)
 }
 
 pub fn (opcode LDROpcode) as_hex() u32 {
-	opcode_part := u32(0x0400_0000)
+	opcode_part := u32(0x0410_0000)
 	condition_part := (u32(opcode.condition) & 0xF) << 28
 	rn_part := u32(opcode.rn) << 16
 	rd_part := u32(opcode.rd) << 12
@@ -440,4 +440,25 @@ pub fn (opcode STMOpcode) as_hex() u32 {
 		register_list_part |= (1 << u32(elem))
 	}
 	return condition_part | rn_part | p_part | s_part | u_part | w_part | register_list_part | opcode_part
+}
+
+
+pub struct STROpcode {
+	LDROpcode
+}
+
+pub fn (opcode STROpcode) as_hex() u32 {
+	opcode_part := u32(0x0400_0000)
+	condition_part := (u32(opcode.condition) & 0xF) << 28
+	rn_part := u32(opcode.rn) << 16
+	rd_part := u32(opcode.rd) << 12
+	p_part := if opcode.p_bit { u32(0x100_0000) } else { u32(0) }
+	u_part := if opcode.u_bit { u32(0x80_0000) } else { u32(0) }
+	b_part := if opcode.b_bit { u32(0x40_0000) } else { u32(0) }
+	w_part := if opcode.w_bit { u32(0x20_0000) } else { u32(0) }
+	address_part := match opcode.address {
+		u16 { u32(opcode.address) }
+		RegisterOffset { opcode.address.as_hex() | 0x200_0000 }
+	}
+	return opcode_part | condition_part | rn_part | rd_part | p_part | u_part | b_part | w_part | address_part
 }
